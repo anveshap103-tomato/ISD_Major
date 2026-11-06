@@ -1,0 +1,9 @@
+{
+  "appId": "com.rythcore.app",
+  "appName": "Ryth Core",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
+

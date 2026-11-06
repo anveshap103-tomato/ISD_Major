@@ -1,0 +1,21 @@
+// Prisma Schema for Ryth Core
+// Problem Statement ID: 2501010153
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------
+// Database Models Placeholder
+// Detailed schema specifications are documented in: docs/DATABASE_SCHEMA.md
+// Team members will define their respective models here:
+// - Jatin: User, Interest, UserInterest, ConnectionRequest, Connection
+// - Anvesha Patel: Content, Category, Bookmark
+// - Tushar Singh: CreatorProfile, Skill, CreatorSkill
+// -------------------------------------------------------------
+
