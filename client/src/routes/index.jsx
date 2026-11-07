@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Login from '../features/auth/Login';
+import Register from '../features/auth/Register';
 
 // Placeholder Home / Splash view
 const HomePlaceholder = () => (
@@ -19,9 +21,9 @@ export default function AppRoutes() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePlaceholder />} />
-        {/* Module routes to be registered here by team members */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     </BrowserRouter>
   );
 }
-
