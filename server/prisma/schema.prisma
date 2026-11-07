@@ -19,3 +19,39 @@ datasource db {
 // - Tushar Singh: CreatorProfile, Skill, CreatorSkill
 // -------------------------------------------------------------
 
+
+model User {
+  id           String         @id @default(uuid()) @db.Uuid
+  email        String         @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  userInterests UserInterest[]
+
+  @@map("users")
+}
+
+model Interest {
+  id            String         @id @default(uuid()) @db.Uuid
+  name          String         @unique
+  slug          String         @unique
+
+  userInterests UserInterest[]
+
+  @@map("interests")
+}
+
+model UserInterest {
+  userId     String   @db.Uuid
+  interestId String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interest Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([userId, interestId])
+  @@map("user_interests")
+}
