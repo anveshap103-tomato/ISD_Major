@@ -36,6 +36,10 @@ export default function CreatorCard({ creator, onViewProfile }) {
     indicator: 'bg-[#28634F]',
   };
 
+  const handleProfileClick = () => {
+    if (onViewProfile) onViewProfile(creator);
+  };
+
   return (
     <article className="bg-white border border-[#E5E3DC] rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-sm hover:shadow-md hover:border-[#D1CEC4] transition-all duration-200 flex flex-col justify-between h-full group">
       <div>
@@ -45,22 +49,35 @@ export default function CreatorCard({ creator, onViewProfile }) {
             {/* Subtle Vertical Accent Indicator */}
             <div className={`w-1 self-stretch rounded-full my-0.5 flex-shrink-0 ${theme.indicator}`} />
 
-            {/* Profile Avatar */}
-            <img
-              src={avatar}
-              alt={name}
-              className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl object-cover border border-[#E5E3DC] flex-shrink-0 shadow-sm group-hover:scale-[1.02] transition-transform duration-200"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=DCE8E0&color=28634F&size=128&bold=true`;
-              }}
-            />
+            {/* Profile Avatar (Clickable) */}
+            <button
+              type="button"
+              onClick={handleProfileClick}
+              className="text-left flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-[#28634F]/30 rounded-xl"
+              aria-label={`View profile of ${name}`}
+            >
+              <img
+                src={avatar}
+                alt={name}
+                className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl object-cover border border-[#E5E3DC] shadow-sm group-hover:scale-[1.02] transition-transform duration-200 cursor-pointer"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=DCE8E0&color=28634F&size=128&bold=true`;
+                }}
+              />
+            </button>
 
             {/* Name & Title */}
             <div className="min-w-0 flex-1">
-              <h3 className="font-serif text-base sm:text-lg font-bold text-[#192521] tracking-tight leading-snug group-hover:text-[#28634F] transition-colors truncate">
-                {name}
-              </h3>
+              <button
+                type="button"
+                onClick={handleProfileClick}
+                className="text-left block w-full focus:outline-none group/title"
+              >
+                <h3 className="font-serif text-base sm:text-lg font-bold text-[#192521] tracking-tight leading-snug group-hover/title:text-[#28634F] transition-colors truncate cursor-pointer">
+                  {name}
+                </h3>
+              </button>
               <p className="text-xs sm:text-sm font-medium text-[#5A6561] mt-0.5 truncate">
                 {role}
               </p>
@@ -75,8 +92,8 @@ export default function CreatorCard({ creator, onViewProfile }) {
           {/* External Profile Link Icon */}
           <button
             type="button"
-            onClick={() => onViewProfile && onViewProfile(creator)}
-            className="p-1.5 text-[#5A6561] hover:text-[#28634F] transition-colors rounded-lg hover:bg-[#EFECE3] flex-shrink-0 touch-manipulation"
+            onClick={handleProfileClick}
+            className="p-1.5 text-[#5A6561] hover:text-[#28634F] transition-colors rounded-lg hover:bg-[#EFECE3] flex-shrink-0 touch-manipulation cursor-pointer"
             title="Open Profile"
             aria-label={`Open profile of ${name}`}
           >
@@ -134,7 +151,7 @@ export default function CreatorCard({ creator, onViewProfile }) {
       <div className="mt-4 sm:mt-5 pt-3 sm:pt-3.5 border-t border-[#EDEBE4]">
         <button
           type="button"
-          onClick={() => onViewProfile && onViewProfile(creator)}
+          onClick={handleProfileClick}
           style={{ backgroundColor: '#28634F', color: '#FFFFFF' }}
           className="w-full h-10 sm:h-11 inline-flex justify-center items-center gap-2 px-4 text-xs sm:text-sm font-semibold text-white bg-[#28634F] hover:bg-[#1E4D3D] rounded-xl shadow-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#28634F] focus:ring-offset-2 active:scale-[0.99] cursor-pointer touch-manipulation"
         >

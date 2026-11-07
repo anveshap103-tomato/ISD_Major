@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../../../components/layout/Navbar';
 import { MOCK_CREATORS, CATEGORIES } from '../data/mockCreators';
 import CreatorSearch from '../components/CreatorSearch';
@@ -7,6 +8,7 @@ import CreatorGrid from '../components/CreatorGrid';
 import HeroArtwork from '../components/HeroArtwork';
 
 export default function CreatorListingPage() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('Relevance');
@@ -48,7 +50,7 @@ export default function CreatorListingPage() {
   };
 
   const handleViewProfile = (creator) => {
-    alert(`Viewing profile for ${creator.name} (${creator.role} @ ${creator.company})`);
+    navigate(`/creators/${creator.id}`);
   };
 
   return (
@@ -87,7 +89,7 @@ export default function CreatorListingPage() {
             </p>
           </div>
 
-          {/* Abstract Editorial Artwork (hidden on mobile & tablet to preserve clean space) */}
+          {/* Abstract Editorial Artwork */}
           <div className="hidden lg:flex w-full lg:w-auto justify-end flex-shrink-0">
             <HeroArtwork />
           </div>
@@ -161,7 +163,7 @@ export default function CreatorListingPage() {
           </div>
         </section>
 
-        {/* Creator Cards Grid (1-col mobile, 2-col tablet, 3-col desktop) */}
+        {/* Creator Cards Grid */}
         <section>
           <CreatorGrid
             creators={filteredCreators}
