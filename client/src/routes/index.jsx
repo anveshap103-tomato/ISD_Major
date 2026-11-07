@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../features/auth/Login';
 import Register from '../features/auth/Register';
 
@@ -16,11 +16,24 @@ const HomePlaceholder = () => (
   </div>
 );
 
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+
+  return token ? children : <Navigate to="/login" replace />;
+};
+
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<HomePlaceholder />} />
+        <Route
+  path="/"
+  element={
+    <ProtectedRoute>
+      <HomePlaceholder />
+    </ProtectedRoute>
+  }
+/>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Routes>
