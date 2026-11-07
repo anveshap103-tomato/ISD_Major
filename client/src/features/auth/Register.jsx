@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const interests = [
   'Technology',
@@ -12,6 +11,61 @@ const interests = [
 ];
 
 export default function Register() {
+    const navigate = useNavigate();
+
+const [name, setName] = useState('');
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
+const [selectedInterests, setSelectedInterests] = useState([]);
+const [error, setError] = useState('');
+const [loading, setLoading] = useState(false);
+
+const handleInterestChange = (interest) => {
+  setSelectedInterests((prev) =>
+    prev.includes(interest)
+      ? prev.filter((item) => item !== interest)
+      : [...prev, interest]
+  );
+};
+
+const handleRegister = async (e) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
+
+  try {
+    const response = await fetch(
+      'http://localhost:5001/api/auth/register',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          interests: selectedInterests,
+        }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error?.message || 'Registration failed');
+    }
+
+    localStorage.setItem('token', result.data.token);
+    localStorage.setItem('user', JSON.stringify(result.data.user));
+
+    navigate('/');
+  } catch (err) {
+    setError(err.message || 'Something went wrong');
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="min-h-screen w-full bg-[#F7F5EF] flex items-center justify-center p-5">
       <div className="w-full max-w-5xl grid md:grid-cols-2 bg-white rounded-3xl overflow-hidden shadow-sm border border-[#EAE7DF]">
@@ -79,48 +133,54 @@ export default function Register() {
             </p>
           </div>
 
-          <form
+        <form
             className="mt-7 space-y-5"
-            onSubmit={(e) => e.preventDefault()}
-          >
+            onSubmit={handleRegister}
+            >
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-[#34483B] mb-2">
                 Full Name
               </label>
-              <input
-                id="name"
-                type="text"
-                placeholder="Your full name"
-                required
-                className="w-full px-4 py-3.5 rounded-xl border border-[#E3E5DF] bg-[#FCFCFA] text-sm focus:outline-none focus:border-[#246B52] focus:ring-2 focus:ring-[#246B52]/10 transition"
-              />
+<input
+  id="name"
+  type="text"
+  value={name}
+  onChange={(e) => setName(e.target.value)}
+  placeholder="Your full name"
+  required
+  className="w-full px-4 py-3.5 rounded-xl border border-[#E3E5DF] bg-[#FCFCFA] text-sm focus:outline-none focus:border-[#246B52] focus:ring-2 focus:ring-[#246B52]/10 transition"
+/>
             </div>
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-[#34483B] mb-2">
                 Email Address
               </label>
-              <input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                required
-                className="w-full px-4 py-3.5 rounded-xl border border-[#E3E5DF] bg-[#FCFCFA] text-sm focus:outline-none focus:border-[#246B52] focus:ring-2 focus:ring-[#246B52]/10 transition"
-              />
+<input
+  id="email"
+  type="email"
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+  placeholder="you@example.com"
+  required
+  className="w-full px-4 py-3.5 rounded-xl border border-[#E3E5DF] bg-[#FCFCFA] text-sm focus:outline-none focus:border-[#246B52] focus:ring-2 focus:ring-[#246B52]/10 transition"
+/>
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-[#34483B] mb-2">
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Create a password"
-                required
-                minLength={8}
-                className="w-full px-4 py-3.5 rounded-xl border border-[#E3E5DF] bg-[#FCFCFA] text-sm focus:outline-none focus:border-[#246B52] focus:ring-2 focus:ring-[#246B52]/10 transition"
-              />
+<input
+  id="password"
+  type="password"
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+  placeholder="Create a password"
+  required
+  minLength={8}
+  className="w-full px-4 py-3.5 rounded-xl border border-[#E3E5DF] bg-[#FCFCFA] text-sm focus:outline-none focus:border-[#246B52] focus:ring-2 focus:ring-[#246B52]/10 transition"
+/>
               <p className="mt-2 text-xs text-[#9A9E98]">
                 Use at least 8 characters.
               </p>
@@ -137,12 +197,14 @@ export default function Register() {
                     key={interest}
                     className="cursor-pointer"
                   >
-                    <input
-                      type="checkbox"
-                      name="interests"
-                      value={interest}
-                      className="peer sr-only"
-                    />
+<input
+  type="checkbox"
+  name="interests"
+  value={interest}
+  checked={selectedInterests.includes(interest)}
+  onChange={() => handleInterestChange(interest)}
+  className="peer sr-only"
+/>
                     <span className="inline-block px-3 py-2 rounded-full border border-[#E3E5DF] text-xs text-[#66766B] peer-checked:bg-[#EAEFE8] peer-checked:border-[#246B52] peer-checked:text-[#246B52] transition">
                       {interest}
                     </span>
@@ -150,13 +212,19 @@ export default function Register() {
                 ))}
               </div>
             </div>
+            {error && (
+  <p className="text-sm text-red-600">
+    {error}
+  </p>
+)}
 
-            <button
-              type="submit"
-              className="w-full py-3.5 rounded-xl bg-[#246B52] text-white text-sm font-semibold hover:bg-[#1C5943] transition shadow-sm"
-            >
-              Create Account →
-            </button>
+<button
+  type="submit"
+  disabled={loading}
+  className="w-full py-3.5 rounded-xl bg-[#246B52] text-white text-sm font-semibold hover:bg-[#1C5943] transition shadow-sm disabled:opacity-60"
+>
+  {loading ? 'Creating Account...' : 'Create Account →'}
+</button>
           </form>
 
           <div className="mt-7 text-center">
