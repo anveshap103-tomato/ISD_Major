@@ -1,20 +1,70 @@
+
 import * as authService from './auth.service.js';
 
-// Auth Controller Placeholders (Jatin)
-// To be implemented during module development
 export const register = async (req, res, next) => {
   try {
-    // Placeholder logic
-    res.status(501).json({ message: 'Register endpoint not yet implemented' });
+    const { name, email, password, interests = [] } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Name, email and password are required',
+        },
+      });
+    }
+
+    if (!Array.isArray(interests)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Interests must be an array',
+        },
+      });
+    }
+
+    const result = await authService.registerUser({
+      name,
+      email,
+      password,
+      interests,
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: result,
+    });
   } catch (error) {
     next(error);
   }
 };
 
+
 export const login = async (req, res, next) => {
   try {
-    // Placeholder logic
-    res.status(501).json({ message: 'Login endpoint not yet implemented' });
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Email and password are required',
+        },
+      });
+    }
+
+    const result = await authService.authenticateUser({
+      email,
+      password,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
   } catch (error) {
     next(error);
   }
