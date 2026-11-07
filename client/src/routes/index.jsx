@@ -37,9 +37,52 @@ const HomePlaceholder = () => {
 };
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
+  const [isAuthenticated, setIsAuthenticated] = React.useState(null);
 
-  return token ? children : <Navigate to="/login" replace />;
+  React.useEffect(() => {
+    const verifyToken = async () => {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        setIsAuthenticated(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          'http://localhost:5001/api/auth/me',
+          {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setIsAuthenticated(false);
+          return;
+        }
+
+        const result = await response.json();
+
+        localStorage.setItem('user', JSON.stringify(result.data.user));
+        setIsAuthenticated(true);
+      } catch (error) {
+        setIsAuthenticated(false);
+      }
+    };
+
+    verifyToken();
+  }, []);
+
+  if (isAuthenticated === null) {
+    return <p>Verifying authentication...</p>;
+  }
+
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 export default function AppRoutes() {
