@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // =============================================================
@@ -15,13 +14,13 @@ datasource db {
 // =============================================================
 
 model User {
-  id             String          @id @default(uuid())
-  email          String          @unique
-  passwordHash   String          @map("password_hash")
-  name           String
-  avatarUrl      String?         @map("avatar_url")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // One-to-one relation with CreatorProfile (Tushar)
   creatorProfile CreatorProfile?
@@ -34,22 +33,22 @@ model User {
 // =============================================================
 
 model CreatorProfile {
-  id                String               @id @default(uuid())
-  userId            String               @unique @map("user_id")
-  professionalTitle String               @map("professional_title")
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  professionalTitle String   @map("professional_title")
   organization      String?
   location          String?
-  introduction      String?              @db.Text
-  biography         String?              @db.Text
-  profileImage      String?              @map("profile_image")
-  socialLinks       Json?                @map("social_links")
-  createdAt         DateTime             @default(now()) @map("created_at")
-  updatedAt         DateTime             @updatedAt @map("updated_at")
+  introduction      String?  @db.Text
+  biography         String?  @db.Text
+  profileImage      String?  @map("profile_image")
+  socialLinks       Json?    @map("social_links")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   // Relationships
-  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skills            CreatorSkill[]
-  achievements      CreatorAchievement[]
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills       CreatorSkill[]
+  achievements CreatorAchievement[]
 
   // Indexes for performant search & lookups
   @@index([professionalTitle])
@@ -58,13 +57,13 @@ model CreatorProfile {
 }
 
 model CreatorSkill {
-  id               String         @id @default(uuid())
-  creatorProfileId String         @map("creator_profile_id")
-  skillName        String         @map("skill_name")
-  createdAt        DateTime       @default(now()) @map("created_at")
+  id               String   @id @default(uuid())
+  creatorProfileId String   @map("creator_profile_id")
+  skillName        String   @map("skill_name")
+  createdAt        DateTime @default(now()) @map("created_at")
 
   // Relationships
-  creatorProfile   CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  creatorProfile CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
 
   // Prevent duplicate skills for the same creator & optimize skill search
   @@unique([creatorProfileId, skillName])
@@ -74,17 +73,17 @@ model CreatorSkill {
 }
 
 model CreatorAchievement {
-  id                  String         @id @default(uuid())
-  creatorProfileId    String         @map("creator_profile_id")
+  id                  String   @id @default(uuid())
+  creatorProfileId    String   @map("creator_profile_id")
   title               String
-  description         String?        @db.Text
-  issuingOrganization String?        @map("issuing_organization")
-  achievementType     String         @default("AWARD") @map("achievement_type")
+  description         String?  @db.Text
+  issuingOrganization String?  @map("issuing_organization")
+  achievementType     String   @default("AWARD") @map("achievement_type")
   year                String?
-  createdAt           DateTime       @default(now()) @map("created_at")
+  createdAt           DateTime @default(now()) @map("created_at")
 
   // Relationships
-  creatorProfile      CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  creatorProfile CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
 
   // Indexes for creator lookups
   @@index([creatorProfileId])

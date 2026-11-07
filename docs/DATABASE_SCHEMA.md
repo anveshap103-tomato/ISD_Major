@@ -1,8 +1,10 @@
 # Database Schema & Entity Relationships — Ryth Core
 
 > **Engine**: PostgreSQL  
-> **ORM**: Prisma ORM  
-> **Schema Location**: `server/prisma/schema.prisma`
+> **ORM**: Prisma ORM (v7.x)  
+> **Schema Location**: `server/prisma/schema.prisma`  
+> **Config Location**: `server/prisma.config.js` (CLI & Migrations)  
+> **Client Adapter**: `@prisma/adapter-pg` (`server/src/config/db.js`)
 
 ---
 
