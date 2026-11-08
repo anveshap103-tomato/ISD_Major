@@ -52,4 +52,3 @@ export const fetchCreatorContent = async (id) => {
   const response = await api.get(`/creators/${id}/content`);
   return response.data;
 };
-

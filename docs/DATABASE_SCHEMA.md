@@ -213,11 +213,53 @@ Stores certifications, awards, open-source milestones, and recognitions earned b
 ## 3. Indexing & Optimization Guidelines
 - **Creator Profiles**:
   - `@@index([professionalTitle])` and `@@index([location])` for performant search.
+  - `@@index([category])` for fast category filtering across creator listings.
 - **Creator Skills**:
   - Composite `@@unique([creatorProfileId, skillName])` ensures data deduplication.
   - B-tree `@@index([skillName])` ensures millisecond-level queries when filtering the creator directory by skill.
 - **Creator Achievements**:
   - `@@index([creatorProfileId])` guarantees quick profile page timeline assembly.
+  - `@@index([achievementType])` enables filtering achievements by certification vs award.
 - **Bookmarks & Connections**:
   - Unique composite index on `(userId, contentId)` in `bookmarks` to prevent duplicate saves.
   - Unique composite index on `(senderId, receiverId)` in `connection_requests`.
+
+---
+
+## 4. Prisma 7 Migration & Seeding Workflow
+
+Ryth Core uses **Prisma ORM 7** configured with `@prisma/adapter-pg` driver adapters in `server/src/config/db.js` and migration configuration in `server/prisma.config.js`.
+
+### 4.1 Schema Validation & Client Generation
+```bash
+cd server
+
+# Validate schema syntax and relations
+npx prisma validate
+
+# Generate updated Prisma Client types and queries
+npx prisma generate
+```
+
+### 4.2 Applying Migrations
+```bash
+# Development: create/apply new migrations
+npx prisma migrate dev
+
+# Production/Staging: apply all pending migrations
+npx prisma migrate deploy
+```
+
+### 4.3 Database Seeding
+The database seed script (`server/prisma/seed.js`) upserts 8 verified industry practitioner profiles spanning 6 domain categories with realistic skills, achievements, and social credentials:
+
+```bash
+cd server
+
+# Using package script (defined in server/package.json)
+npm run prisma:seed
+
+# Or direct invocation
+node prisma/seed.js
+```
+The seed execution is idempotent (`upsert` operations based on unique user emails and profile relations), ensuring safe repeated executions without duplicate record creation.
