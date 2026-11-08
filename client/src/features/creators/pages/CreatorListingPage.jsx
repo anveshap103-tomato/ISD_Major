@@ -27,6 +27,7 @@ export default function CreatorListingPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [retryCounter, setRetryCounter] = useState(0);
 
   // 1. Debounce search input (350ms) to prevent excessive backend queries while typing
   useEffect(() => {
@@ -42,46 +43,58 @@ export default function CreatorListingPage() {
     setCurrentPage(1);
   }, [debouncedSearch, selectedCategory]);
 
-  // 3. Fetch creators from live PostgreSQL backend using creatorsApi service
-  const loadCreators = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const params = {
-        page: currentPage,
-        limit: pageSize,
-      };
-
-      if (debouncedSearch.trim()) {
-        params.search = debouncedSearch.trim();
-      }
-
-      if (selectedCategory && selectedCategory !== 'All') {
-        params.category = selectedCategory;
-      }
-
-      const response = await fetchCreators(params);
-
-      if (response && response.success && response.data) {
-        setCreators(response.data.creators || []);
-        setTotal(response.data.total ?? 0);
-        setTotalPages(response.data.totalPages ?? 1);
-      } else {
-        throw new Error(response?.message || 'Failed to retrieve creators from database');
-      }
-    } catch (err) {
-      console.error('Failed to load creators from live API:', err);
-      setError(err);
-      setCreators([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [debouncedSearch, selectedCategory, currentPage, pageSize]);
-
+  // 3. Fetch creators from live PostgreSQL backend with stale-response protection
   useEffect(() => {
-    loadCreators();
-  }, [loadCreators]);
+    let ignore = false;
+
+    const executeFetch = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const params = {
+          page: currentPage,
+          limit: pageSize,
+        };
+
+        if (debouncedSearch.trim()) {
+          params.search = debouncedSearch.trim();
+        }
+
+        if (selectedCategory && selectedCategory !== 'All') {
+          params.category = selectedCategory;
+        }
+
+        const response = await fetchCreators(params);
+
+        if (!ignore) {
+          if (response && response.success && response.data) {
+            setCreators(response.data.creators || []);
+            setTotal(response.data.total ?? 0);
+            setTotalPages(response.data.totalPages ?? 1);
+          } else {
+            throw new Error(response?.message || 'Failed to retrieve creators from database');
+          }
+        }
+      } catch (err) {
+        if (!ignore) {
+          console.error('Failed to load creators from live API:', err);
+          setError(err);
+          setCreators([]);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    executeFetch();
+
+    return () => {
+      ignore = true; // Stale-response protection: cancel effect when parameters change
+    };
+  }, [debouncedSearch, selectedCategory, currentPage, pageSize, retryCounter]);
 
   // 4. Client-side sorting applied to currently fetched result set
   const sortedCreators = useMemo(() => {
@@ -109,6 +122,11 @@ export default function CreatorListingPage() {
   // Immediate search submission (bypasses debounce on Enter or Search button click)
   const handleSearchSubmit = () => {
     setDebouncedSearch(searchTerm);
+  };
+
+  // Retry action to reload data with active parameters
+  const handleRetry = () => {
+    setRetryCounter((c) => c + 1);
   };
 
   // Navigate to detailed profile using PostgreSQL UUID
@@ -210,7 +228,7 @@ export default function CreatorListingPage() {
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-[#28634F] hover:underline font-semibold underline-offset-2 ml-1 sm:ml-2 transition-colors cursor-pointer touch-manipulation"
+                className="text-[#28634F] hover:underline font-semibold underline-offset-2 ml-1 sm:ml-2 transition-colors cursor-pointer touch-manipulation focus:outline-none focus:ring-1 focus:ring-[#28634F] rounded"
               >
                 Reset filters
               </button>
@@ -222,13 +240,14 @@ export default function CreatorListingPage() {
             <label htmlFor="sort-select" className="text-xs font-medium text-[#5A6561] flex-shrink-0">
               Sort by:
             </label>
-            <div className="relative">
+            <div className="relative flex items-center gap-1.5">
               <select
                 id="sort-select"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 disabled={isLoading || !!error}
                 className="bg-white border border-[#E5E3DC] rounded-lg px-3 py-1.5 text-xs font-semibold text-[#192521] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#28634F] focus:border-[#28634F] cursor-pointer pr-7 appearance-none touch-manipulation min-h-[36px] disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Sort practitioners on current page"
               >
                 <option value="Relevance">Relevance</option>
                 <option value="Experience">Experience (High to Low)</option>
@@ -244,6 +263,11 @@ export default function CreatorListingPage() {
                 </svg>
               </div>
             </div>
+            {totalPages > 1 && sortBy !== 'Relevance' && (
+              <span className="text-[11px] text-[#5A6561]/80 italic hidden md:inline">
+                (Page {currentPage})
+              </span>
+            )}
           </div>
         </section>
 
@@ -253,7 +277,7 @@ export default function CreatorListingPage() {
             creators={sortedCreators}
             isLoading={isLoading}
             error={error}
-            onRetry={loadCreators}
+            onRetry={handleRetry}
             onViewProfile={handleViewProfile}
             onResetFilters={handleResetFilters}
           />
@@ -272,7 +296,7 @@ export default function CreatorListingPage() {
                 type="button"
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                className="px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-[#192521] bg-white border border-[#E5E3DC] rounded-xl hover:bg-[#EFECE3] disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-[#192521] bg-white border border-[#E5E3DC] rounded-xl hover:bg-[#EFECE3] disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-[#28634F]"
                 aria-label="Previous page"
               >
                 &larr; Prev
@@ -284,7 +308,7 @@ export default function CreatorListingPage() {
                   type="button"
                   onClick={() => setCurrentPage(pageNum)}
                   style={pageNum === currentPage ? { backgroundColor: '#28634F', color: '#FFFFFF' } : {}}
-                  className={`w-8 h-8 sm:w-9 sm:h-9 text-xs font-semibold rounded-xl transition-colors ${
+                  className={`w-8 h-8 sm:w-9 sm:h-9 text-xs font-semibold rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-[#28634F] ${
                     pageNum === currentPage
                       ? 'bg-[#28634F] text-white shadow-sm'
                       : 'bg-white text-[#192521] border border-[#E5E3DC] hover:bg-[#EFECE3]'
@@ -299,7 +323,7 @@ export default function CreatorListingPage() {
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                className="px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-[#192521] bg-white border border-[#E5E3DC] rounded-xl hover:bg-[#EFECE3] disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-[#192521] bg-white border border-[#E5E3DC] rounded-xl hover:bg-[#EFECE3] disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-[#28634F]"
                 aria-label="Next page"
               >
                 Next &rarr;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '../../../components/layout/Navbar';
 import { fetchCreatorById, fetchCreatorContent } from '../services/creatorsApi';
@@ -98,48 +98,74 @@ export default function CreatorProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  const [retryCounter, setRetryCounter] = useState(0);
 
-  // Fetch creator profile and content from backend API
-  const loadProfile = useCallback(async () => {
-    // Check if ID is a valid UUID; avoid issuing requests for clearly invalid IDs
+  // Fetch creator profile and content from backend API with stale-response protection
+  useEffect(() => {
+    let ignore = false;
+
+    // Fast-fail on clearly invalid route parameters without firing network requests
     if (!id || !isValidUUID(id)) {
       setNotFound(true);
       setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
-    setNotFound(false);
+    const loadProfileData = async () => {
+      setIsLoading(true);
+      setError(null);
+      setNotFound(false);
 
-    try {
-      const [profileRes, contentRes] = await Promise.all([
-        fetchCreatorById(id.trim()),
-        fetchCreatorContent(id.trim()).catch(() => ({ data: { content: [] } })),
-      ]);
+      const trimmedId = id.trim();
 
-      if (profileRes && profileRes.success && profileRes.data?.creator) {
-        setCreator(profileRes.data.creator);
-        setContentData(contentRes?.data || { content: [], count: 0 });
-      } else {
-        setNotFound(true);
+      try {
+        // 1. Fetch primary creator profile
+        const profileRes = await fetchCreatorById(trimmedId);
+
+        if (ignore) return;
+
+        if (profileRes && profileRes.success && profileRes.data?.creator) {
+          setCreator(profileRes.data.creator);
+        } else {
+          setNotFound(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // 2. Independently load optional creator content without blocking profile display
+        try {
+          const contentRes = await fetchCreatorContent(trimmedId);
+          if (!ignore && contentRes && contentRes.success && contentRes.data) {
+            setContentData(contentRes.data);
+          }
+        } catch (contentErr) {
+          console.warn('Optional creator content could not be loaded:', contentErr?.message);
+          if (!ignore) {
+            setContentData({ content: [], count: 0 });
+          }
+        }
+      } catch (err) {
+        if (!ignore) {
+          console.error('Failed to load creator profile from API:', err);
+          if (err.response?.status === 404 || err.response?.data?.error?.code === 'NOT_FOUND') {
+            setNotFound(true);
+          } else {
+            setError(err);
+          }
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
       }
-    } catch (err) {
-      console.error('Failed to load creator profile from API:', err);
-      // If server returned 404 NOT_FOUND, display not found screen
-      if (err.response?.status === 404 || err.response?.data?.error?.code === 'NOT_FOUND') {
-        setNotFound(true);
-      } else {
-        setError(err);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [id]);
+    };
 
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    loadProfileData();
+
+    return () => {
+      ignore = true; // Stale-response protection: cancel effect when UUID changes
+    };
+  }, [id, retryCounter]);
 
   // Defensively map profile fields to ensure no null/undefined breaks child components
   const safeCreator = useMemo(() => {
@@ -169,6 +195,10 @@ export default function CreatorProfilePage() {
     };
   }, [creator]);
 
+  const handleRetry = () => {
+    setRetryCounter((c) => c + 1);
+  };
+
   // 1. Loading State
   if (isLoading) {
     return <ProfileSkeleton />;
@@ -194,7 +224,7 @@ export default function CreatorProfilePage() {
           <Link
             to="/creators"
             style={{ backgroundColor: '#28634F', color: '#FFFFFF' }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#28634F] hover:bg-[#1E4D3D] transition-colors shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#28634F] hover:bg-[#1E4D3D] transition-colors shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#28634F]"
           >
             <span>&larr;</span> Back to Creators
           </Link>
@@ -223,15 +253,15 @@ export default function CreatorProfilePage() {
           <div className="flex items-center justify-center gap-3">
             <button
               type="button"
-              onClick={loadProfile}
+              onClick={handleRetry}
               style={{ backgroundColor: '#28634F', color: '#FFFFFF' }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#28634F] hover:bg-[#1E4D3D] transition-colors shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#28634F] hover:bg-[#1E4D3D] transition-colors shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#28634F]"
             >
               Retry
             </button>
             <Link
               to="/creators"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-[#192521] bg-white border border-[#E5E3DC] hover:bg-[#EFECE3] transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-[#192521] bg-white border border-[#E5E3DC] hover:bg-[#EFECE3] transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-[#28634F]"
             >
               Back to Creators
             </Link>
@@ -253,7 +283,7 @@ export default function CreatorProfilePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <Link
             to="/creators"
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#28634F] hover:text-[#1E4D3D] transition-colors group w-fit cursor-pointer"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#28634F] hover:text-[#1E4D3D] transition-colors group w-fit cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#28634F] rounded"
           >
             <span className="group-hover:-translate-x-1 transition-transform">&larr;</span>
             <span>Back to Creator Discovery</span>
@@ -305,7 +335,7 @@ export default function CreatorProfilePage() {
                       href={item.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-4 rounded-xl bg-[#F8F7F2] border border-[#E5E3DC] hover:border-[#28634F]/40 transition-colors flex flex-col justify-between group"
+                      className="p-4 rounded-xl bg-[#F8F7F2] border border-[#E5E3DC] hover:border-[#28634F]/40 transition-colors flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-[#28634F]"
                     >
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-1.5">
