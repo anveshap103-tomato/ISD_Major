@@ -1,9 +1,20 @@
+
 import * as connectionsService from './connections.service.js';
 
-// Connections Controller Placeholders (Jatin)
 export const sendRequest = async (req, res, next) => {
   try {
-    res.status(501).json({ message: 'Send connection request not yet implemented' });
+    const { receiverId, note } = req.body;
+
+    const result = await connectionsService.createConnectionRequest(
+      req.user.userId,
+      receiverId,
+      note
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result,
+    });
   } catch (error) {
     next(error);
   }
@@ -11,7 +22,14 @@ export const sendRequest = async (req, res, next) => {
 
 export const getConnections = async (req, res, next) => {
   try {
-    res.status(501).json({ message: 'Get connections not yet implemented' });
+    const result = await connectionsService.fetchUserConnections(
+      req.user.userId
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
   } catch (error) {
     next(error);
   }
@@ -19,9 +37,19 @@ export const getConnections = async (req, res, next) => {
 
 export const respondToRequest = async (req, res, next) => {
   try {
-    res.status(501).json({ message: 'Respond to connection request not yet implemented' });
+    const { status } = req.body;
+
+    const result = await connectionsService.updateConnectionStatus(
+      req.params.id,
+      req.user.userId,
+      status
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
   } catch (error) {
     next(error);
   }
 };
-
