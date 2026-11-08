@@ -45,6 +45,8 @@ erDiagram
         String biography
         String profileImage
         Json socialLinks
+        String category
+        Int experienceYears
         DateTime createdAt
         DateTime updatedAt
     }
@@ -145,7 +147,9 @@ Stores extended professional identity and domain credentials for verified creato
   - `introduction` (`String?` Text): Short editorial intro / tagline.
   - `biography` (`String?` Text): Detailed professional narrative and background.
   - `profile_image` (`String?`): High-resolution profile portrait URL.
-  - `social_links` (`Json?`): Structured social URLs (`github`, `linkedin`, `twitter`, `website`).
+  - `social_links` (`Json?`): Structured social URLs (`github`, `linkedin`, `twitter`, `website`, `expertiseAreas`, `experienceHistory`).
+  - `category` (`String?`): Creator domain category (e.g., `Cloud & DevOps`, `AI & Machine Learning`, `Frontend & Design`).
+  - `experience_years` (`Int?`): Professional experience in years.
   - `created_at` (`DateTime` default `now()`): Record creation timestamp.
   - `updated_at` (`DateTime` updated automatically): Record modification timestamp.
 - **Relationships**:
@@ -156,6 +160,7 @@ Stores extended professional identity and domain credentials for verified creato
   - `@unique([userId])`: Ensures each user has at most one creator profile.
   - `@@index([professionalTitle])`: Optimizes searching and filtering by job role.
   - `@@index([location])`: Accelerates regional practitioner filtering.
+  - `@@index([category])`: High-speed category filtering in creator discovery.
 
 #### `creator_skills` (`CreatorSkill`)
 Stores individual technical, design, and domain competencies for each creator.
