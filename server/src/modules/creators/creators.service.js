@@ -1,5 +1,6 @@
 // Creator Service Layer — Ryth Core
-// Business logic separate from controllers; mock responses without database connection
+// Business logic separate from controllers; database-backed listing via Prisma 7
+import prisma from '../../config/db.js';
 
 const MOCK_CREATORS = [
   {
@@ -111,42 +112,165 @@ const MOCK_CREATOR_CONTENT = {
 };
 
 /**
- * Fetch list of creators with optional query filters
+ * Fetch list of creators from PostgreSQL database with optional query filters
  */
 export const fetchCreators = async ({ search, category, skill, page = 1, limit = 10 }) => {
-  let creators = [...MOCK_CREATORS];
-
-  if (category && category !== 'All') {
-    creators = creators.filter(
-      (c) => c.category.toLowerCase() === category.toLowerCase()
-    );
+  // Validate pagination parameters
+  let pageNum = 1;
+  if (page !== undefined && page !== null && page !== '') {
+    pageNum = Number(page);
+    if (!Number.isInteger(pageNum) || pageNum < 1) {
+      const error = new Error('Invalid page parameter: must be a positive integer');
+      error.statusCode = 400;
+      error.code = 'BAD_REQUEST';
+      throw error;
+    }
   }
 
-  if (skill) {
-    creators = creators.filter((c) =>
-      c.skills.some((s) => s.toLowerCase().includes(skill.toLowerCase()))
-    );
+  let limitNum = 10;
+  if (limit !== undefined && limit !== null && limit !== '') {
+    limitNum = Number(limit);
+    if (!Number.isInteger(limitNum) || limitNum < 1) {
+      const error = new Error('Invalid limit parameter: must be a positive integer');
+      error.statusCode = 400;
+      error.code = 'BAD_REQUEST';
+      throw error;
+    }
   }
 
-  if (search) {
-    const q = search.toLowerCase();
-    creators = creators.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.role.toLowerCase().includes(q) ||
-        c.company.toLowerCase().includes(q) ||
-        c.bio.toLowerCase().includes(q)
-    );
+  const whereConditions = [];
+
+  // 1. Search keyword (name, professional title, organization, biography, introduction)
+  const trimmedSearch = typeof search === 'string' ? search.trim() : '';
+  if (trimmedSearch) {
+    whereConditions.push({
+      OR: [
+        {
+          user: {
+            name: {
+              contains: trimmedSearch,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          professionalTitle: {
+            contains: trimmedSearch,
+            mode: 'insensitive',
+          },
+        },
+        {
+          organization: {
+            contains: trimmedSearch,
+            mode: 'insensitive',
+          },
+        },
+        {
+          biography: {
+            contains: trimmedSearch,
+            mode: 'insensitive',
+          },
+        },
+        {
+          introduction: {
+            contains: trimmedSearch,
+            mode: 'insensitive',
+          },
+        },
+      ],
+    });
   }
 
-  const startIndex = (parseInt(page, 10) - 1) * parseInt(limit, 10);
-  const paginatedCreators = creators.slice(startIndex, startIndex + parseInt(limit, 10));
+  // 2. Category domain filter
+  const trimmedCategory = typeof category === 'string' ? category.trim() : '';
+  if (trimmedCategory && trimmedCategory.toLowerCase() !== 'all') {
+    whereConditions.push({
+      category: {
+        equals: trimmedCategory,
+        mode: 'insensitive',
+      },
+    });
+  }
+
+  // 3. Skill filter
+  const trimmedSkill = typeof skill === 'string' ? skill.trim() : '';
+  if (trimmedSkill) {
+    whereConditions.push({
+      skills: {
+        some: {
+          skillName: {
+            contains: trimmedSkill,
+            mode: 'insensitive',
+          },
+        },
+      },
+    });
+  }
+
+  const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
+
+  const skip = (pageNum - 1) * limitNum;
+  const take = limitNum;
+
+  // Execute count and selective relational query in parallel to prevent N+1 queries
+  const [total, profiles] = await Promise.all([
+    prisma.creatorProfile.count({ where }),
+    prisma.creatorProfile.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        professionalTitle: true,
+        organization: true,
+        location: true,
+        introduction: true,
+        biography: true,
+        profileImage: true,
+        category: true,
+        experienceYears: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+        skills: {
+          select: {
+            skillName: true,
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+    }),
+  ]);
+
+  // Map to frontend-compatible flat schema
+  const creators = profiles.map((p) => ({
+    id: p.id,
+    name: p.user?.name || '',
+    role: p.professionalTitle,
+    company: p.organization || '',
+    location: p.location || '',
+    avatar: p.profileImage || p.user?.avatarUrl || '',
+    profileImage: p.profileImage || p.user?.avatarUrl || '',
+    headline: p.introduction || '',
+    bio: p.biography || p.introduction || '',
+    category: p.category || '',
+    skills: p.skills.map((s) => s.skillName),
+    experienceYears: p.experienceYears ?? 0,
+    contentCount: 0,
+  }));
 
   return {
-    creators: paginatedCreators,
-    total: creators.length,
-    page: parseInt(page, 10),
-    totalPages: Math.ceil(creators.length / parseInt(limit, 10)) || 1,
+    creators,
+    total,
+    page: pageNum,
+    totalPages: Math.ceil(total / limitNum) || 1,
   };
 };
 
