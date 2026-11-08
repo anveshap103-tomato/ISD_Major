@@ -1,5 +1,3 @@
-// Prisma Schema for Ryth Core
-// Problem Statement ID: 2501010153
 
 generator client {
   provider = "prisma-client-js"
@@ -7,34 +5,84 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// =============================================================
-// Core Identity Models (Jatin)
-// =============================================================
-
 model User {
-  id           String   @id @default(uuid())
+  id           String   @id @default(uuid()) @db.Uuid
   email        String   @unique
-  passwordHash String   @map("password_hash")
+  passwordHash String
   name         String
-  avatarUrl    String?  @map("avatar_url")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  // One-to-one relation with CreatorProfile (Tushar)
+  userInterests UserInterest[]
+
+  sentRequests     ConnectionRequest[] @relation("RequestSender")
+  receivedRequests ConnectionRequest[] @relation("RequestReceiver")
+
+  connectionsAsA Connection[] @relation("ConnectionUserA")
+  connectionsAsB Connection[] @relation("ConnectionUserB")
+
   creatorProfile CreatorProfile?
 
   @@map("users")
 }
 
-// =============================================================
-// Creator Discovery & Profile Models (Tushar Singh)
-// =============================================================
+model Interest {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+  slug String @unique
+
+  userInterests UserInterest[]
+
+  @@map("interests")
+}
+
+model UserInterest {
+  userId     String   @db.Uuid
+  interestId String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interest Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([userId, interestId])
+  @@map("user_interests")
+}
+
+model ConnectionRequest {
+  id         String   @id @default(uuid()) @db.Uuid
+  senderId   String   @db.Uuid
+  receiverId String   @db.Uuid
+  note       String?
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("RequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("RequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@map("connection_requests")
+}
+
+model Connection {
+  id        String   @id @default(uuid()) @db.Uuid
+  userAId   String   @db.Uuid
+  userBId   String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  userA User @relation("ConnectionUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("ConnectionUserB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([userAId, userBId])
+  @@map("connections")
+}
 
 model CreatorProfile {
-  id                String   @id @default(uuid())
-  userId            String   @unique @map("user_id")
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @unique @map("user_id") @db.Uuid
   professionalTitle String   @map("professional_title")
   organization      String?
   location          String?
@@ -45,27 +93,23 @@ model CreatorProfile {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  // Relationships
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   skills       CreatorSkill[]
   achievements CreatorAchievement[]
 
-  // Indexes for performant search & lookups
   @@index([professionalTitle])
   @@index([location])
   @@map("creator_profiles")
 }
 
 model CreatorSkill {
-  id               String   @id @default(uuid())
-  creatorProfileId String   @map("creator_profile_id")
+  id               String   @id @default(uuid()) @db.Uuid
+  creatorProfileId String   @map("creator_profile_id") @db.Uuid
   skillName        String   @map("skill_name")
   createdAt        DateTime @default(now()) @map("created_at")
 
-  // Relationships
   creatorProfile CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
 
-  // Prevent duplicate skills for the same creator & optimize skill search
   @@unique([creatorProfileId, skillName])
   @@index([creatorProfileId])
   @@index([skillName])
@@ -73,8 +117,8 @@ model CreatorSkill {
 }
 
 model CreatorAchievement {
-  id                  String   @id @default(uuid())
-  creatorProfileId    String   @map("creator_profile_id")
+  id                  String   @id @default(uuid()) @db.Uuid
+  creatorProfileId    String   @map("creator_profile_id") @db.Uuid
   title               String
   description         String?  @db.Text
   issuingOrganization String?  @map("issuing_organization")
@@ -82,17 +126,9 @@ model CreatorAchievement {
   year                String?
   createdAt           DateTime @default(now()) @map("created_at")
 
-  // Relationships
   creatorProfile CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
 
-  // Indexes for creator lookups
   @@index([creatorProfileId])
   @@index([achievementType])
   @@map("creator_achievements")
 }
-
-// =============================================================
-// Module Placeholders for Team Members:
-// - Anvesha Patel: Content, Category, Bookmark
-// - Jatin: Interest, UserInterest, ConnectionRequest, Connection
-// =============================================================
