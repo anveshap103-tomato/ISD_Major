@@ -1,7 +1,18 @@
+
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Link,
+  Navigate,
+  useNavigate,
+} from 'react-router-dom';
+
 import Login from '../features/auth/Login';
 import Register from '../features/auth/Register';
+import CreatorListingPage from '../features/creators/pages/CreatorListingPage';
+import CreatorProfilePage from '../features/creators/pages/CreatorProfilePage';
 
 const HomePlaceholder = () => {
   const navigate = useNavigate();
@@ -13,18 +24,30 @@ const HomePlaceholder = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-3xl font-bold text-gray-900">Ryth Core</h1>
+    <div className="min-h-screen flex flex-col justify-center items-center p-6 text-center bg-[#F7F5EF]">
+      <div className="max-w-md space-y-4">
+        <p className="text-[11px] font-medium tracking-widest uppercase text-[#28634F]">
+          Ryth Core
+        </p>
 
-      <p className="text-gray-600 max-w-md">
-        Connecting learning, creator discovery, and real-world networking.
-      </p>
+        <h1 className="font-serif text-3xl sm:text-4xl text-[#192521] font-normal tracking-tight">
+          Learning, Discovery &amp; Real-World Networking
+        </h1>
 
-      <div className="inline-block bg-white shadow rounded-lg px-4 py-2 text-sm text-gray-500">
-        Ready for module development (Content, Creators, Connections)
-      </div>
+        <p className="text-sm text-[#5A6561] leading-relaxed">
+          Explore knowledge, discover practitioners, and build real-world connections.
+        </p>
 
-      <div>
+        <div className="pt-3">
+          <Link
+            to="/creators"
+            style={{ backgroundColor: '#28634F', color: '#FFFFFF' }}
+            className="inline-flex items-center px-5 py-2.5 text-xs font-semibold uppercase tracking-wider rounded-xl shadow-sm transition-colors duration-150"
+          >
+            Explore Creators &rarr;
+          </Link>
+        </div>
+
         <button
           onClick={handleLogout}
           className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
@@ -90,15 +113,36 @@ export default function AppRoutes() {
     <BrowserRouter>
       <Routes>
         <Route
-  path="/"
-  element={
-    <ProtectedRoute>
-      <HomePlaceholder />
-    </ProtectedRoute>
-  }
-/>
+          path="/"
+          element={
+            <ProtectedRoute>
+              <HomePlaceholder />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        <Route
+          path="/creators"
+          element={
+            <ProtectedRoute>
+              <CreatorListingPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/creators/:id"
+          element={
+            <ProtectedRoute>
+              <CreatorProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

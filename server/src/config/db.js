@@ -1,8 +1,8 @@
 import { PrismaClient } from '@prisma/client';
+import dotenv from 'dotenv';
 
-// Prisma Client singleton placeholder
-// Initialize after running 'npx prisma generate'
+dotenv.config();
+
 const prisma = new PrismaClient();
 
 export default prisma;
-
