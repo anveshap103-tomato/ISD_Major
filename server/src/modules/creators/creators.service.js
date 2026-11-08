@@ -1,115 +1,10 @@
 // Creator Service Layer — Ryth Core
-// Business logic separate from controllers; database-backed listing via Prisma 7
+// Business logic separate from controllers; fully database-backed via Prisma 7 & PostgreSQL
 import prisma from '../../config/db.js';
 
-const MOCK_CREATORS = [
-  {
-    id: 'creator-1',
-    name: 'Aarav Sharma',
-    role: 'Staff Cloud Architect',
-    company: 'Google Cloud',
-    location: 'Bengaluru, India',
-    headline: 'Architecting planetary-scale distributed cloud systems & mentoring platform engineers.',
-    bio: 'Specializing in planetary-scale distributed systems and Kubernetes infrastructure. Passionate about mentoring aspiring platform engineers.',
-    category: 'Cloud & DevOps',
-    skills: ['Kubernetes', 'GCP', 'Terraform', 'Go', 'Distributed Systems'],
-    experienceYears: 9,
-    contentCount: 4,
-  },
-  {
-    id: 'creator-2',
-    name: 'Dr. Priya Nambiar',
-    role: 'Principal AI Research Scientist',
-    company: 'DeepMind',
-    location: 'London, United Kingdom',
-    headline: 'Advancing multimodal reasoning, foundation models, and verifiable AI safety paradigms.',
-    bio: 'Working on LLM reasoning and multimodal foundation models. Writer and speaker on AI safety and future tech paradigms.',
-    category: 'AI & Machine Learning',
-    skills: ['PyTorch', 'LLMs', 'Transformer Models', 'Python', 'MLOps'],
-    experienceYears: 11,
-    contentCount: 6,
-  },
-  {
-    id: 'creator-3',
-    name: 'Marcus Vance',
-    role: 'Senior Design Systems Lead',
-    company: 'Figma',
-    location: 'San Francisco, CA',
-    headline: 'Crafting accessible design systems, design tokens, and frontend component architectures.',
-    bio: 'Bridging the divide between product design and modern frontend engineering. Creator of popular accessible UI toolkits.',
-    category: 'Frontend & Design',
-    skills: ['UI/UX', 'Design Systems', 'React', 'Tailwind CSS', 'TypeScript'],
-    experienceYears: 7,
-    contentCount: 5,
-  },
-  {
-    id: 'creator-4',
-    name: 'Neha Kapoor',
-    role: 'Lead Security Engineer',
-    company: 'Cloudflare',
-    location: 'Austin, TX',
-    headline: 'Hardening global edge networks against zero-day exploits with zero-trust architectures.',
-    bio: 'Defending mission-critical web applications against zero-day threats. Advocate for defensive zero-trust architectures.',
-    category: 'Cybersecurity',
-    skills: ['Zero Trust', 'AppSec', 'Penetration Testing', 'Cryptography', 'Rust'],
-    experienceYears: 8,
-    contentCount: 3,
-  },
-  {
-    id: 'creator-5',
-    name: 'Vikram Sengupta',
-    role: 'Backend Engineering Manager',
-    company: 'Stripe',
-    location: 'Seattle, WA',
-    headline: 'Building ultra-reliable payment ledgers, event-driven backends, and distributed data pipelines.',
-    bio: 'Architecting ultra-reliable payments systems with 99.999% uptime. Enthusiast of event-driven architectures and PostgreSQL tuning.',
-    category: 'Backend & Systems',
-    skills: ['PostgreSQL', 'Node.js', 'Kafka', 'System Design', 'Redis'],
-    experienceYears: 10,
-    contentCount: 5,
-  },
-  {
-    id: 'creator-6',
-    name: 'Elena Rostova',
-    role: 'VP of Product',
-    company: 'Notion',
-    location: 'New York, NY',
-    headline: 'Scaling collaborative knowledge products from 0 to 1 with user psychology and PLG.',
-    bio: 'Helping product builders scale from 0 to 1 and beyond. Focused on product-led growth and user psychology.',
-    category: 'Product & Tech Leadership',
-    skills: ['Product Strategy', 'PLG', 'Agile Leadership', 'User Research', 'Analytics'],
-    experienceYears: 12,
-    contentCount: 7,
-  },
-];
-
-const MOCK_CREATOR_CONTENT = {
-  'creator-1': [
-    {
-      id: 'content-101',
-      title: 'Designing Zero-Downtime Multi-Region Kubernetes Architectures',
-      type: 'article',
-      url: 'https://example.com/k8s-multi-region',
-      publishedAt: '2026-10-15',
-    },
-    {
-      id: 'content-102',
-      title: 'Consensus Protocols Explained: Raft vs Paxos in Practice',
-      type: 'video',
-      url: 'https://example.com/consensus-protocols',
-      publishedAt: '2026-10-28',
-    },
-  ],
-  'creator-2': [
-    {
-      id: 'content-201',
-      title: 'Mechanistic Interpretability in Dense Multimodal Transformers',
-      type: 'article',
-      url: 'https://example.com/interpretability-transformers',
-      publishedAt: '2026-10-10',
-    },
-  ],
-};
+// Standard UUID format validator
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isValidUUID = (id) => typeof id === 'string' && UUID_REGEX.test(id.trim());
 
 /**
  * Fetch list of creators from PostgreSQL database with optional query filters
@@ -275,55 +170,276 @@ export const fetchCreators = async ({ search, category, skill, page = 1, limit =
 };
 
 /**
- * Dedicated search across creator credentials, name, and skills
+ * Dedicated database-backed search across creator credentials, name, organization, biography, and skills
  */
 export const searchCreators = async ({ query, skill, expertise }) => {
-  const q = (query || '').toLowerCase().trim();
+  const trimmedQuery = typeof query === 'string' ? query.trim() : '';
+  const trimmedSkill = typeof skill === 'string' ? skill.trim() : '';
+  const trimmedExpertise = typeof expertise === 'string' ? expertise.trim() : '';
 
-  let results = MOCK_CREATORS.filter((c) => {
-    const matchesQuery =
-      q === '' ||
-      c.name.toLowerCase().includes(q) ||
-      c.role.toLowerCase().includes(q) ||
-      c.skills.some((s) => s.toLowerCase().includes(q));
+  const whereConditions = [];
 
-    const matchesSkill =
-      !skill || c.skills.some((s) => s.toLowerCase() === skill.toLowerCase());
+  // Query across name, professional title, organization, biography, introduction, and skills
+  if (trimmedQuery) {
+    whereConditions.push({
+      OR: [
+        {
+          user: {
+            name: {
+              contains: trimmedQuery,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          professionalTitle: {
+            contains: trimmedQuery,
+            mode: 'insensitive',
+          },
+        },
+        {
+          organization: {
+            contains: trimmedQuery,
+            mode: 'insensitive',
+          },
+        },
+        {
+          biography: {
+            contains: trimmedQuery,
+            mode: 'insensitive',
+          },
+        },
+        {
+          introduction: {
+            contains: trimmedQuery,
+            mode: 'insensitive',
+          },
+        },
+        {
+          skills: {
+            some: {
+              skillName: {
+                contains: trimmedQuery,
+                mode: 'insensitive',
+              },
+            },
+          },
+        },
+      ],
+    });
+  }
 
-    const matchesExpertise =
-      !expertise || c.category.toLowerCase() === expertise.toLowerCase();
+  // Filter by specific skill
+  if (trimmedSkill) {
+    whereConditions.push({
+      skills: {
+        some: {
+          skillName: {
+            contains: trimmedSkill,
+            mode: 'insensitive',
+          },
+        },
+      },
+    });
+  }
 
-    return matchesQuery && matchesSkill && matchesExpertise;
+  // Filter by category / domain expertise
+  if (trimmedExpertise && trimmedExpertise.toLowerCase() !== 'all') {
+    whereConditions.push({
+      category: {
+        equals: trimmedExpertise,
+        mode: 'insensitive',
+      },
+    });
+  }
+
+  const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
+
+  const profiles = await prisma.creatorProfile.findMany({
+    where,
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      professionalTitle: true,
+      organization: true,
+      location: true,
+      profileImage: true,
+      category: true,
+      experienceYears: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+        },
+      },
+      skills: {
+        select: {
+          skillName: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
+    },
   });
+
+  const results = profiles.map((p) => ({
+    id: p.id,
+    name: p.user?.name || '',
+    role: p.professionalTitle,
+    company: p.organization || '',
+    location: p.location || '',
+    avatar: p.profileImage || p.user?.avatarUrl || '',
+    profileImage: p.profileImage || p.user?.avatarUrl || '',
+    category: p.category || '',
+    skills: p.skills.map((s) => s.skillName),
+    experienceYears: p.experienceYears ?? 0,
+  }));
 
   return {
     results,
-    query: q,
+    query: trimmedQuery,
     count: results.length,
   };
 };
 
 /**
- * Fetch detailed creator profile by ID
+ * Fetch detailed creator profile by unique ID (Profile ID or User ID)
  */
 export const fetchCreatorById = async (id) => {
-  const creator = MOCK_CREATORS.find((c) => c.id === id);
-  return creator || null;
-};
+  if (!isValidUUID(id)) {
+    return null;
+  }
 
-/**
- * Fetch educational resources and content associated with a creator
- */
-export const fetchCreatorContent = async (creatorId) => {
-  const creator = MOCK_CREATORS.find((c) => c.id === creatorId);
-  if (!creator) return null;
+  const trimmedId = id.trim();
 
-  const content = MOCK_CREATOR_CONTENT[creatorId] || [];
+  const profile = await prisma.creatorProfile.findFirst({
+    where: {
+      OR: [
+        { id: trimmedId },
+        { userId: trimmedId },
+      ],
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatarUrl: true,
+          createdAt: true,
+        },
+      },
+      skills: {
+        orderBy: { createdAt: 'asc' },
+      },
+      achievements: {
+        orderBy: { createdAt: 'asc' },
+      },
+    },
+  });
+
+  if (!profile) {
+    return null;
+  }
+
+  const socialLinksObj = profile.socialLinks && typeof profile.socialLinks === 'object'
+    ? profile.socialLinks
+    : {};
+
+  const expertiseAreas = Array.isArray(socialLinksObj.expertiseAreas)
+    ? socialLinksObj.expertiseAreas
+    : [];
+
+  const experienceHistory = Array.isArray(socialLinksObj.experienceHistory)
+    ? socialLinksObj.experienceHistory
+    : [];
+
+  const detailedBio = profile.biography
+    ? profile.biography.split('\n\n')
+    : (profile.introduction ? [profile.introduction] : []);
+
   return {
-    creatorId,
-    creatorName: creator.name,
-    content,
-    count: content.length,
+    id: profile.id,
+    userId: profile.userId,
+    name: profile.user?.name || '',
+    email: profile.user?.email || '',
+    role: profile.professionalTitle,
+    professionalTitle: profile.professionalTitle,
+    company: profile.organization || '',
+    organization: profile.organization || '',
+    location: profile.location || '',
+    avatar: profile.profileImage || profile.user?.avatarUrl || '',
+    profileImage: profile.profileImage || profile.user?.avatarUrl || '',
+    headline: profile.introduction || '',
+    introduction: profile.introduction || '',
+    bio: profile.biography || profile.introduction || '',
+    biography: profile.biography || profile.introduction || '',
+    detailedBio,
+    category: profile.category || '',
+    experienceYears: profile.experienceYears ?? 0,
+    expertiseAreas,
+    experienceHistory,
+    socialLinks: {
+      github: socialLinksObj.github || '',
+      linkedin: socialLinksObj.linkedin || '',
+      twitter: socialLinksObj.twitter || '',
+      website: socialLinksObj.website || '',
+    },
+    skills: profile.skills.map((s) => s.skillName),
+    achievements: profile.achievements.map((a) => ({
+      id: a.id,
+      title: a.title,
+      issuer: a.issuingOrganization || '',
+      issuingOrganization: a.issuingOrganization || '',
+      achievementType: a.achievementType,
+      year: a.year || '',
+      description: a.description || '',
+    })),
+    contentCount: 0,
+    createdAt: profile.createdAt,
+    updatedAt: profile.updatedAt,
   };
 };
 
+/**
+ * Fetch educational resources and content associated with a creator.
+ * Temporary note: Anvesha Patel's Content module is slated for subsequent integration;
+ * currently returns a consistent empty content list for existing creators and null (404) for nonexistent IDs.
+ */
+export const fetchCreatorContent = async (creatorId) => {
+  if (!isValidUUID(creatorId)) {
+    return null;
+  }
+
+  const trimmedId = creatorId.trim();
+
+  const profile = await prisma.creatorProfile.findFirst({
+    where: {
+      OR: [
+        { id: trimmedId },
+        { userId: trimmedId },
+      ],
+    },
+    select: {
+      id: true,
+      user: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (!profile) {
+    return null;
+  }
+
+  return {
+    creatorId: profile.id,
+    creatorName: profile.user?.name || '',
+    content: [],
+    count: 0,
+  };
+};
