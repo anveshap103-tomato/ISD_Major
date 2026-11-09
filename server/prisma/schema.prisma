@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -26,8 +25,63 @@ model User {
   connectionsAsB Connection[] @relation("ConnectionUserB")
 
   creatorProfile CreatorProfile?
+  bookmarks      Bookmark[]
 
   @@map("users")
+}
+
+enum ContentType {
+  ARTICLE
+  VIDEO
+  BOOK
+}
+
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  content Content[]
+
+  @@map("categories")
+}
+
+model Content {
+  id          String      @id @default(uuid()) @db.Uuid
+  title       String
+  description String?     @db.Text
+  type        ContentType
+  url         String
+  author      String?
+  imageUrl    String?     @map("image_url")
+  duration    String?
+  isbn        String?
+  categoryId  String      @map("category_id") @db.Uuid
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  category  Category   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  bookmarks Bookmark[]
+
+  @@index([type])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@map("contents")
+}
+
+model Bookmark {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  contentId String   @map("content_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+  @@index([contentId])
+  @@map("bookmarks")
 }
 
 model Interest {

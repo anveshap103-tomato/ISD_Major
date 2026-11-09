@@ -116,6 +116,18 @@
   }
   ```
 
+#### `GET /api/content/:id`
+- **Description**: Retrieve a single article, video or book by its ID.
+- **Response (200 OK)**: Returns the content item, including its category and type-specific metadata such as `duration` or `isbn` when available.
+
+#### `GET /api/content/categories`
+- **Description**: List the available content categories.
+- **Response (200 OK)**: Returns category records containing `id`, `name` and `slug`.
+
+#### `GET /api/content/articles`, `GET /api/content/videos`, `GET /api/content/books`
+- **Description**: Convenience listing endpoints for one content type.
+- **Response (200 OK)**: Uses the same paginated response shape as `GET /api/content`.
+
 #### `POST /api/content/bookmarks`
 - **Auth**: Required
 - **Description**: Bookmark an article, video, or book.
@@ -129,6 +141,11 @@
 #### `GET /api/content/bookmarks`
 - **Auth**: Required
 - **Description**: Retrieve user's saved bookmarks.
+
+#### `DELETE /api/content/bookmarks/:contentId`
+- **Auth**: Required
+- **Description**: Remove a saved item from the authenticated user's bookmarks.
+- **Response (200 OK)**: Returns the removed bookmark ID and content ID.
 
 ---
 
@@ -446,4 +463,3 @@
     }
   }
   ```
-

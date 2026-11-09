@@ -1,12 +1,19 @@
 import { Router } from 'express';
 import * as contentController from './content.controller.js';
+import { authenticateToken } from '../../middlewares/auth.js';
 
 const router = Router();
 
-// Route placeholders (Anvesha Patel)
-// router.get('/', contentController.getContentList);
-// router.post('/bookmarks', contentController.addBookmark);
-// router.get('/bookmarks', contentController.getBookmarks);
+router.get('/', contentController.getContentList);
+router.get('/categories', contentController.getCategories);
+router.get('/articles', contentController.getArticles);
+router.get('/videos', contentController.getVideos);
+router.get('/books', contentController.getBooks);
+
+router.get('/bookmarks', authenticateToken, contentController.getBookmarks);
+router.post('/bookmarks', authenticateToken, contentController.addBookmark);
+router.delete('/bookmarks/:contentId', authenticateToken, contentController.removeBookmark);
+
+router.get('/:id', contentController.getContentById);
 
 export default router;
-
