@@ -13,6 +13,7 @@ import Login from '../features/auth/Login';
 import Register from '../features/auth/Register';
 import CreatorListingPage from '../features/creators/pages/CreatorListingPage';
 import CreatorProfilePage from '../features/creators/pages/CreatorProfilePage';
+import InterestsOnboarding from '../features/onboarding/InterestsOnboarding';
 
 const HomePlaceholder = () => {
   const navigate = useNavigate();
@@ -125,6 +126,15 @@ export default function AppRoutes() {
         <Route path="/register" element={<Register />} />
 
         <Route
+  path="/onboarding"
+  element={
+    <ProtectedRoute>
+      <InterestsOnboarding />
+    </ProtectedRoute>
+  }
+/>
+
+        <Route
           path="/creators"
           element={
             <ProtectedRoute>
@@ -141,6 +151,8 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
+        
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

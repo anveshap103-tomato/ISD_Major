@@ -75,3 +75,51 @@ export const getMe = async (req, res, next) => {
     next(error);
   }
 };
+
+
+export const getInterests = async (req, res, next) => {
+  try {
+    const interests = usersService.getAvailableInterests();
+
+    return res.status(200).json({
+      success: true,
+      data: { interests },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateMyInterests = async (req, res, next) => {
+  try {
+    const { interests } = req.body;
+
+    if (
+      !Array.isArray(interests) ||
+      !interests.every((interest) => typeof interest === 'string') ||
+      interests.some((interest) => !usersService.getAvailableInterests().includes(interest)) ||
+      new Set(interests).size !== interests.length
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Please provide valid, unique interests',
+        },
+      });
+    }
+
+    const user = await usersService.updateUserInterests(
+      req.user.userId,
+      interests
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Interests updated successfully',
+      data: { user },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
