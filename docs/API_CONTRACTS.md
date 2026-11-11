@@ -88,11 +88,11 @@
 #### `GET /api/content`
 - **Description**: Fetch content with optional filters.
 - **Query Parameters**:
-  - `type`: `article` | `video` | `book`
+  - `type`: `article` | `video` | `book` (case-insensitive)
   - `category`: string (e.g. `technology`, `design`)
   - `search`: string
   - `page`: integer (default: 1)
-  - `limit`: integer (default: 10)
+  - `limit`: integer (default: 10, maximum: 50)
 - **Response (200 OK)**:
   ```json
   {
@@ -116,6 +116,15 @@
   }
   ```
 
+#### `GET /api/content/:id`
+- **Description**: Retrieve one content item by its UUID.
+- **Response (200 OK)**: Uses the success envelope above and returns the content item, including its category.
+- **Response (404 Not Found)**: Returned when the content item does not exist.
+
+#### `GET /api/content/categories`
+- **Description**: Retrieve the available content categories.
+- **Response (200 OK)**: `{ "success": true, "data": { "items": [] }, "message": "Categories retrieved successfully" }`
+
 #### `POST /api/content/bookmarks`
 - **Auth**: Required
 - **Description**: Bookmark an article, video, or book.
@@ -125,10 +134,21 @@
     "contentId": "uuid"
   }
   ```
+- **Response (201 Created)**: Returns the created bookmark in the standard success envelope.
+- **Response (409 Conflict)**: Returned if the user already bookmarked this content.
 
 #### `GET /api/content/bookmarks`
 - **Auth**: Required
 - **Description**: Retrieve user's saved bookmarks.
+- **Response (200 OK)**: Returns `{ "items": [] }` in the standard success envelope.
+
+#### `DELETE /api/content/bookmarks/:contentId`
+- **Auth**: Required
+- **Description**: Remove the current user's bookmark for the specified content UUID.
+- **Response (200 OK)**: Returns the removed content ID in the standard success envelope.
+- **Response (404 Not Found)**: Returned if the current user has no bookmark for that content.
+
+> **Day 1 status:** Routes and contracts are in place. Content queries and bookmark persistence will be implemented on Day 2; these endpoints currently return the standard `NOT_IMPLEMENTED` error until then.
 
 ---
 
