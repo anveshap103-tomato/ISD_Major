@@ -35,7 +35,7 @@ export const fetchCreators = async ({ search, category, skill, page = 1, limit =
 
   const whereConditions = [];
 
-  // 1. Search keyword (name, professional title, organization, biography, introduction)
+  // 1. Search keyword (name, professional title, organization, biography, introduction, skills)
   const trimmedSearch = typeof search === 'string' ? search.trim() : '';
   if (trimmedSearch) {
     whereConditions.push({
@@ -70,6 +70,16 @@ export const fetchCreators = async ({ search, category, skill, page = 1, limit =
           introduction: {
             contains: trimmedSearch,
             mode: 'insensitive',
+          },
+        },
+        {
+          skills: {
+            some: {
+              skillName: {
+                contains: trimmedSearch,
+                mode: 'insensitive',
+              },
+            },
           },
         },
       ],
@@ -147,6 +157,7 @@ export const fetchCreators = async ({ search, category, skill, page = 1, limit =
   // Map to frontend-compatible flat schema
   const creators = profiles.map((p) => ({
     id: p.id,
+    userId: p.user?.id || '',
     name: p.user?.name || '',
     role: p.professionalTitle,
     company: p.organization || '',
@@ -286,6 +297,7 @@ export const searchCreators = async ({ query, skill, expertise }) => {
 
   const results = profiles.map((p) => ({
     id: p.id,
+    userId: p.user?.id || '',
     name: p.user?.name || '',
     role: p.professionalTitle,
     company: p.organization || '',

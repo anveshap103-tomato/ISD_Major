@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../../components/layout/Navbar';
-import { CATEGORIES } from '../data/mockCreators';
+import { CREATOR_CATEGORIES } from '../constants/categories';
 import { fetchCreators } from '../services/creatorsApi';
+import { fetchUserConnections } from '../services/connectionsApi';
 import CreatorSearch from '../components/CreatorSearch';
 import CategoryFilter from '../components/CategoryFilter';
 import CreatorGrid from '../components/CreatorGrid';
@@ -28,22 +29,37 @@ export default function CreatorListingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [retryCounter, setRetryCounter] = useState(0);
+  const [connectionsData, setConnectionsData] = useState(null);
 
-  // 1. Debounce search input (350ms) to prevent excessive backend queries while typing
+  // Fetch authenticated user's connections to synchronize card states
+  useEffect(() => {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token) {
+      fetchUserConnections()
+        .then((res) => {
+          if (res?.data) {
+            setConnectionsData(res.data);
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not load user connections on directory page:', err?.message);
+        });
+    }
+  }, []);
+
+  // 1. Debounce search input (350ms) and reset pagination to page 1 when search updates
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) {
+        setDebouncedSearch(searchTerm);
+        setCurrentPage(1);
+      }
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, debouncedSearch]);
 
-  // 2. Reset pagination to page 1 whenever search keywords or domain category change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, selectedCategory]);
-
-  // 3. Fetch creators from live PostgreSQL backend with stale-response protection
+  // 2. Fetch creators from live PostgreSQL backend with stale-response protection
   useEffect(() => {
     let ignore = false;
 
@@ -81,6 +97,8 @@ export default function CreatorListingPage() {
           console.error('Failed to load creators from live API:', err);
           setError(err);
           setCreators([]);
+          setTotal(0);
+          setTotalPages(1);
         }
       } finally {
         if (!ignore) {
@@ -119,9 +137,16 @@ export default function CreatorListingPage() {
     setCurrentPage(1);
   };
 
+  // Category change handler with immediate pagination reset
+  const handleSelectCategory = (category) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
+  };
+
   // Immediate search submission (bypasses debounce on Enter or Search button click)
   const handleSearchSubmit = () => {
     setDebouncedSearch(searchTerm);
+    setCurrentPage(1);
   };
 
   // Retry action to reload data with active parameters
@@ -186,6 +211,7 @@ export default function CreatorListingPage() {
             onClear={() => {
               setSearchTerm('');
               setDebouncedSearch('');
+              setCurrentPage(1);
             }}
             onSearchSubmit={handleSearchSubmit}
           />
@@ -194,9 +220,9 @@ export default function CreatorListingPage() {
         {/* Category Filters Carousel */}
         <section className="mb-4 sm:mb-6">
           <CategoryFilter
-            categories={CATEGORIES}
+            categories={CREATOR_CATEGORIES}
             selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
+            onSelectCategory={handleSelectCategory}
           />
         </section>
 
@@ -264,8 +290,8 @@ export default function CreatorListingPage() {
               </div>
             </div>
             {totalPages > 1 && sortBy !== 'Relevance' && (
-              <span className="text-[11px] text-[#5A6561]/80 italic hidden md:inline">
-                (Page {currentPage})
+              <span className="text-[11px] text-[#5A6561]/80 italic whitespace-nowrap">
+                (Current page only)
               </span>
             )}
           </div>
@@ -280,6 +306,7 @@ export default function CreatorListingPage() {
             onRetry={handleRetry}
             onViewProfile={handleViewProfile}
             onResetFilters={handleResetFilters}
+            connectionsData={connectionsData}
           />
         </section>
 

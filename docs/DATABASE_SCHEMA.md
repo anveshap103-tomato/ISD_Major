@@ -153,7 +153,7 @@ Stores extended professional identity and domain credentials for verified creato
   - `created_at` (`DateTime` default `now()`): Record creation timestamp.
   - `updated_at` (`DateTime` updated automatically): Record modification timestamp.
 - **Relationships**:
-  - `user`: `User` (1:1 relation via `userId`).
+  - `user`: `User` (1:1 relation via `userId`). Profile routes use `CreatorProfile.id`, while Connections APIs target `CreatorProfile.userId` (`users.id`).
   - `skills`: `CreatorSkill[]` (1:N relation).
   - `achievements`: `CreatorAchievement[]` (1:N relation).
 - **Constraints & Indexes**:
@@ -199,14 +199,16 @@ Stores certifications, awards, open-source milestones, and recognitions earned b
 - **`categories`**: Grouping taxonomy for content (e.g., `Engineering`, `Product Management`).
 - **`contents`**: Stores educational resources:
   - `type` enum: `ARTICLE`, `VIDEO`, `BOOK`.
-  - External links, metadata, author details.
+  - `author` (`String`): Plain-text author name; currently **no foreign-key relation** links `Content` to `CreatorProfile` or `User` (pending Content Hub backend integration before `GET /api/creators/:id/content` can query creator-owned items reliably).
+  - External links and category relation (`categoryId`).
 - **`bookmarks`**: User saved resources for later review.
 
 ---
 
 ### 2.4 Connections & Networking Tables (Jatin)
-- **`connection_requests`**: Tracks connection invitations, states (`PENDING`, `ACCEPTED`, `REJECTED`), and intro notes.
-- **`connections`**: Established bidirectional relationships between two platform members.
+- **`connection_requests`**: Tracks connection invitations (`senderId`, `receiverId` referencing `users.id`), states (`PENDING`, `ACCEPTED`, `REJECTED`), and intro notes.
+- **`connections`**: Established bidirectional relationships between two `users.id` records (`userAId`, `userBId`).
+  - *Integration note*: Creator Discovery cards and profile headers pass `creator.userId` (`User.id`), never `CreatorProfile.id`, when creating or checking connections.
 
 ---
 

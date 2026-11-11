@@ -46,6 +46,7 @@ export default function CreatorGrid({
   onRetry = null,
   onViewProfile,
   onResetFilters,
+  connectionsData = null,
 }) {
   // 1. Loading State
   if (isLoading) {
@@ -134,6 +135,7 @@ export default function CreatorGrid({
           key={creator.id}
           creator={creator}
           onViewProfile={onViewProfile}
+          connectionsData={connectionsData}
         />
       ))}
     </div>

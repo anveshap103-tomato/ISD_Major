@@ -166,11 +166,11 @@
 - **Query Parameters**:
   | Parameter | Type | Required | Default | Description |
   | :--- | :--- | :--- | :--- | :--- |
-  | `search` | `string` | No | — | Case-insensitive match across `user.name`, `professionalTitle`, `organization`, `biography`, or `introduction`. |
+  | `search` | `string` | No | — | Case-insensitive match across `user.name`, `professionalTitle`, `organization`, `biography`, `introduction`, and `skills` (`CreatorSkill.skillName`). |
   | `category` | `string` | No | `All` | Filter by domain category (e.g. `Cloud & DevOps`, `AI & Machine Learning`, `Frontend & Design`, `Backend & Systems`, `Cybersecurity`, `Product & Tech Leadership`). |
   | `skill` | `string` | No | — | Filter creators possessing a specific skill tag (e.g. `Kubernetes`, `PyTorch`). |
   | `page` | `integer` | No | `1` | Page number for pagination (must be a positive integer $\ge 1$). |
-  | `limit` | `integer` | No | `10` | Maximum number of creator records to return per page (capped at `50`). |
+  | `limit` | `integer` | No | `10` | Maximum number of creator records to return per page. |
 
 - **HTTP Status Codes**:
   - `200 OK`: Request succeeded, returns creator array and pagination metadata.
@@ -185,6 +185,7 @@
       "creators": [
         {
           "id": "1eb08dc3-f87d-4634-8117-477a8fa48e46",
+          "userId": "58685dcd-a036-4117-89fe-b4ae6ee944d7",
           "name": "Aarav Sharma",
           "role": "Staff Cloud Architect",
           "company": "Google Cloud",
@@ -244,6 +245,7 @@
       "results": [
         {
           "id": "1eb08dc3-f87d-4634-8117-477a8fa48e46",
+          "userId": "58685dcd-a036-4117-89fe-b4ae6ee944d7",
           "name": "Aarav Sharma",
           "role": "Staff Cloud Architect",
           "company": "Google Cloud",
@@ -374,7 +376,8 @@
   | `id` | `string` | Yes | Unique creator identifier (PostgreSQL UUID format). |
 
 - **Integration Status**:
-  > **Teammate Integration Notice**: Returns a guaranteed empty collection `{ content: [], count: 0 }` for existing creators until Anvesha Patel's Content Hub module is connected. Non-existent creator IDs return `404 Not Found`.
+  > **Teammate Integration Notice**: Returns `{ creatorId, creatorName, content: [], count: 0 }` for existing creators until Anvesha Patel's Content Hub persistence (`server/src/modules/content/content.service.js`, currently returning `501 NOT_IMPLEMENTED`) and a creator/user foreign-key relationship on `Content` are implemented. Non-existent or invalid creator IDs return `404 Not Found`.
+  > When live content items are returned, `ProfileContentShowcase.jsx` expects `id`, `title`, `type` (`ARTICLE` | `VIDEO` | `BOOK`), `description`, `url`, optional `thumbnail` / `thumbnailUrl`, optional `category`, and `publishedAt` / `createdAt`.
 
 - **HTTP Status Codes**:
   - `200 OK`: Request succeeded, returns creator identity and content array.
@@ -410,30 +413,41 @@
 
 ### 2.4 Connections & Networking (`/api/connections`) — Jatin
 
+> **Identifier Contract (Creator Discovery Integration):**
+> - Creator profile navigation (`/creators/:id`) uses **`CreatorProfile.id`** (`creator.id`).
+> - Connection API requests (`/api/connections/*`) operate on **`User.id`** (`creator.userId`). Passing `CreatorProfile.id` as `receiverId` will fail with `404 USER_NOT_FOUND`.
+
 #### `POST /api/connections/request`
-- **Auth**: Required
+- **Auth**: Required (`Bearer <token>`)
 - **Description**: Send a connection request to a creator or peer.
 - **Request Body**:
   ```json
   {
-    "receiverId": "uuid",
-    "note": "Hi Sarah, I would love to connect and learn more about your journey in Cloud Computing."
+    "receiverId": "58685dcd-a036-4117-89fe-b4ae6ee944d7",
+    "note": "Hi Aarav, I would love to connect and learn more about your journey in Cloud Computing."
   }
   ```
+- **Responses**:
+  - `201 Created`: Request created (`status: "PENDING"`).
+  - `400 Bad Request` (`SELF_REQUEST`): Attempting to connect with your own `User.id`.
+  - `404 Not Found` (`USER_NOT_FOUND`): `receiverId` does not match any `users.id`.
+  - `409 Conflict` (`ALREADY_CONNECTED` / `REQUEST_ALREADY_EXISTS`): Already connected or pending request already exists.
 
 #### `GET /api/connections`
-- **Auth**: Required
-- **Description**: Fetch all active connections and pending connection requests.
+- **Auth**: Required (`Bearer <token>`)
+- **Description**: Fetch all active connections (`connections`), outgoing pending requests (`sentRequests`), and incoming pending requests (`receivedRequests`) for the authenticated user.
+- **Response (`200 OK`)**: `{ "success": true, "data": { "connections": [], "sentRequests": [], "receivedRequests": [] } }`
 
 #### `PATCH /api/connections/:id`
-- **Auth**: Required
-- **Description**: Accept or reject a connection request.
+- **Auth**: Required (`Bearer <token>`)
+- **Description**: Accept or reject an incoming connection request (`:id` is the `ConnectionRequest.id` UUID).
 - **Request Body**:
   ```json
   {
     "status": "ACCEPTED"
   }
   ```
+  *(Supported values: `"ACCEPTED"`, `"REJECTED"`)*
 
 ---
 

@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '../../../components/layout/Navbar';
 import { fetchCreatorById, fetchCreatorContent } from '../services/creatorsApi';
+import { fetchUserConnections } from '../services/connectionsApi';
 import ProfileHeader from '../components/ProfileHeader';
 import ProfileAbout from '../components/ProfileAbout';
 import ProfileSkills from '../components/ProfileSkills';
 import ProfileExperience from '../components/ProfileExperience';
 import ProfileAchievements from '../components/ProfileAchievements';
+import ProfileContentShowcase from '../components/ProfileContentShowcase';
+import ConnectButton from '../components/ConnectButton';
 
 // Standard UUID format validator
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -95,17 +98,41 @@ export default function CreatorProfilePage() {
 
   const [creator, setCreator] = useState(null);
   const [contentData, setContentData] = useState(null);
+  const [isContentLoading, setIsContentLoading] = useState(false);
+  const [contentError, setContentError] = useState(null);
+  const [contentRetryCounter, setContentRetryCounter] = useState(0);
+  const [connectionsData, setConnectionsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [retryCounter, setRetryCounter] = useState(0);
 
-  // Fetch creator profile and content from backend API with stale-response protection
+  // Fetch authenticated user's connections once to synchronize header & sidebar Connect buttons
+  const loadConnections = useCallback(async () => {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return;
+    try {
+      const res = await fetchUserConnections();
+      if (res?.data) {
+        setConnectionsData(res.data);
+      }
+    } catch (err) {
+      console.warn('Could not load user connections on profile page:', err?.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadConnections();
+  }, [loadConnections]);
+
+  // Fetch primary creator profile from backend API with stale-response protection
   useEffect(() => {
     let ignore = false;
 
     // Fast-fail on clearly invalid route parameters without firing network requests
     if (!id || !isValidUUID(id)) {
+      setCreator(null);
+      setError(null);
       setNotFound(true);
       setIsLoading(false);
       return;
@@ -115,11 +142,11 @@ export default function CreatorProfilePage() {
       setIsLoading(true);
       setError(null);
       setNotFound(false);
+      setCreator(null);
 
       const trimmedId = id.trim();
 
       try {
-        // 1. Fetch primary creator profile
         const profileRes = await fetchCreatorById(trimmedId);
 
         if (ignore) return;
@@ -128,21 +155,6 @@ export default function CreatorProfilePage() {
           setCreator(profileRes.data.creator);
         } else {
           setNotFound(true);
-          setIsLoading(false);
-          return;
-        }
-
-        // 2. Independently load optional creator content without blocking profile display
-        try {
-          const contentRes = await fetchCreatorContent(trimmedId);
-          if (!ignore && contentRes && contentRes.success && contentRes.data) {
-            setContentData(contentRes.data);
-          }
-        } catch (contentErr) {
-          console.warn('Optional creator content could not be loaded:', contentErr?.message);
-          if (!ignore) {
-            setContentData({ content: [], count: 0 });
-          }
         }
       } catch (err) {
         if (!ignore) {
@@ -166,6 +178,54 @@ export default function CreatorProfilePage() {
       ignore = true; // Stale-response protection: cancel effect when UUID changes
     };
   }, [id, retryCounter]);
+
+  // Fetch creator-associated content independently so content latency/errors never block profile display
+  useEffect(() => {
+    let ignore = false;
+
+    if (!id || !isValidUUID(id)) {
+      setContentData(null);
+      setContentError(null);
+      setIsContentLoading(false);
+      return;
+    }
+
+    const loadCreatorContent = async () => {
+      setIsContentLoading(true);
+      setContentError(null);
+      setContentData(null);
+
+      try {
+        const contentRes = await fetchCreatorContent(id.trim());
+        if (!ignore) {
+          if (contentRes && contentRes.success && contentRes.data) {
+            setContentData(contentRes.data);
+          } else {
+            setContentData({ content: [], count: 0 });
+          }
+        }
+      } catch (contentErr) {
+        console.warn('Creator content could not be loaded:', contentErr?.message);
+        if (!ignore) {
+          if (contentErr.response?.status === 404) {
+            setContentData({ content: [], count: 0 });
+          } else {
+            setContentError(contentErr);
+          }
+        }
+      } finally {
+        if (!ignore) {
+          setIsContentLoading(false);
+        }
+      }
+    };
+
+    loadCreatorContent();
+
+    return () => {
+      ignore = true;
+    };
+  }, [id, contentRetryCounter]);
 
   // Defensively map profile fields to ensure no null/undefined breaks child components
   const safeCreator = useMemo(() => {
@@ -197,6 +257,11 @@ export default function CreatorProfilePage() {
 
   const handleRetry = () => {
     setRetryCounter((c) => c + 1);
+    setContentRetryCounter((c) => c + 1);
+  };
+
+  const handleRetryContent = () => {
+    setContentRetryCounter((c) => c + 1);
   };
 
   // 1. Loading State
@@ -204,36 +269,7 @@ export default function CreatorProfilePage() {
     return <ProfileSkeleton />;
   }
 
-  // 2. Not Found State (404 or Invalid UUID)
-  if (notFound || !safeCreator) {
-    return (
-      <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans">
-        <Navbar />
-        <main className="max-w-3xl mx-auto px-4 py-16 text-center">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#EBF3EE] flex items-center justify-center text-[#28634F]">
-            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#192521] mb-2">
-            Creator Not Found
-          </h2>
-          <p className="text-sm text-[#5A6561] mb-6 max-w-md mx-auto leading-relaxed">
-            The practitioner profile you are looking for does not exist or has been relocated.
-          </p>
-          <Link
-            to="/creators"
-            style={{ backgroundColor: '#28634F', color: '#FFFFFF' }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#28634F] hover:bg-[#1E4D3D] transition-colors shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#28634F]"
-          >
-            <span>&larr;</span> Back to Creators
-          </Link>
-        </main>
-      </div>
-    );
-  }
-
-  // 3. Error State (Network or 500 error)
+  // 2. Error State (Network or 500 error) — checked before !safeCreator so Retry UI is reachable
   if (error) {
     return (
       <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans">
@@ -271,6 +307,35 @@ export default function CreatorProfilePage() {
     );
   }
 
+  // 3. Not Found State (404 or Invalid UUID)
+  if (notFound || !safeCreator) {
+    return (
+      <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans">
+        <Navbar />
+        <main className="max-w-3xl mx-auto px-4 py-16 text-center">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#EBF3EE] flex items-center justify-center text-[#28634F]">
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#192521] mb-2">
+            Creator Not Found
+          </h2>
+          <p className="text-sm text-[#5A6561] mb-6 max-w-md mx-auto leading-relaxed">
+            The practitioner profile you are looking for does not exist or has been relocated.
+          </p>
+          <Link
+            to="/creators"
+            style={{ backgroundColor: '#28634F', color: '#FFFFFF' }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#28634F] hover:bg-[#1E4D3D] transition-colors shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#28634F]"
+          >
+            <span>&larr;</span> Back to Creators
+          </Link>
+        </main>
+      </div>
+    );
+  }
+
   // 4. Populated Profile View
   return (
     <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans overflow-x-hidden w-full">
@@ -300,7 +365,11 @@ export default function CreatorProfilePage() {
 
         {/* 1. Profile Header Component */}
         <section>
-          <ProfileHeader creator={safeCreator} />
+          <ProfileHeader
+            creator={safeCreator}
+            connectionsData={connectionsData}
+            onConnectionActionSuccess={loadConnections}
+          />
         </section>
 
         {/* Two-Column Responsive Layout */}
@@ -316,65 +385,14 @@ export default function CreatorProfilePage() {
             {/* 4. Achievements & Certifications */}
             <ProfileAchievements achievements={safeCreator.achievements} />
 
-            {/* 5. Published Knowledge & Educational Resources Section */}
-            <section className="bg-white border border-[#E5E3DC] rounded-2xl p-6 sm:p-8 shadow-sm">
-              <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
-                <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#192521] tracking-tight flex items-center gap-2">
-                  <span>Published Knowledge &amp; Resources</span>
-                </h2>
-                <span className="text-xs font-semibold text-[#5A6561] bg-[#F8F7F2] px-2.5 py-1 rounded-lg border border-[#E5E3DC]">
-                  {contentData?.content?.length || 0} items
-                </span>
-              </div>
-
-              {contentData?.content && contentData.content.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {contentData.content.map((item) => (
-                    <a
-                      key={item.id}
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-4 rounded-xl bg-[#F8F7F2] border border-[#E5E3DC] hover:border-[#28634F]/40 transition-colors flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-[#28634F]"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#28634F] bg-[#DCE8E0] px-2 py-0.5 rounded">
-                            {item.type}
-                          </span>
-                          {item.publishedAt && (
-                            <span className="text-[11px] text-[#5A6561]">
-                              {item.publishedAt}
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="font-serif text-sm sm:text-base font-bold text-[#192521] group-hover:text-[#28634F] transition-colors leading-snug">
-                          {item.title}
-                        </h3>
-                      </div>
-                      <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-[#28634F]">
-                        <span>View resource</span>
-                        <span>&rarr;</span>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-6 sm:p-8 rounded-xl bg-[#F8F7F2] border border-[#E5E3DC] text-center">
-                  <div className="w-10 h-10 mx-auto mb-2.5 rounded-full bg-[#EDEBE4] flex items-center justify-center text-[#5A6561]">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                    </svg>
-                  </div>
-                  <h3 className="font-serif text-sm sm:text-base font-bold text-[#192521] mb-1">
-                    No published resources yet
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[#5A6561] max-w-md mx-auto leading-relaxed">
-                    {safeCreator.name} has not published educational resources or guides yet. Check back soon for upcoming articles and learning materials.
-                  </p>
-                </div>
-              )}
-            </section>
+            {/* 5. Published Knowledge & Educational Resources Showcase */}
+            <ProfileContentShowcase
+              creatorName={safeCreator.name}
+              content={contentData?.content || []}
+              isLoading={isContentLoading}
+              error={contentError}
+              onRetry={handleRetryContent}
+            />
           </div>
 
           {/* Sidebar Column (Right / 1 Col on Desktop) */}
@@ -397,9 +415,19 @@ export default function CreatorProfilePage() {
                 Connect with {safeCreator.name} to exchange insights, review career progression milestones, and learn how to navigate {safeCreator.category}.
               </p>
 
-              <div className="p-3 bg-white rounded-xl border border-[#DCE8E0] text-xs text-[#28634F] font-medium flex items-center gap-2">
+              <div className="p-3 bg-white rounded-xl border border-[#DCE8E0] text-xs text-[#28634F] font-medium flex items-center gap-2 mb-4">
                 <span className="w-2 h-2 rounded-full bg-[#28634F] flex-shrink-0 animate-pulse" />
                 <span>Open for mentoring &amp; career advice</span>
+              </div>
+
+              <div className="pt-2">
+                <ConnectButton
+                  variant="profile"
+                  userId={safeCreator.userId}
+                  creatorName={safeCreator.name}
+                  connectionsData={connectionsData}
+                  onActionSuccess={loadConnections}
+                />
               </div>
             </div>
           </div>

@@ -3,7 +3,9 @@ import React from 'react';
 export default function ProfileAbout({ creator }) {
   const { detailedBio, bio, expertiseAreas } = creator;
 
-  const paragraphs = detailedBio && detailedBio.length > 0 ? detailedBio : [bio];
+  const paragraphs = Array.isArray(detailedBio) && detailedBio.length > 0
+    ? detailedBio.filter(Boolean)
+    : (bio ? [bio] : []);
 
   return (
     <div className="bg-white border border-[#E5E3DC] rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
@@ -12,11 +14,17 @@ export default function ProfileAbout({ creator }) {
         <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#192521] tracking-tight mb-4 flex items-center gap-2">
           <span>About</span>
         </h2>
-        <div className="space-y-3.5 text-sm sm:text-base text-[#5A6561] leading-relaxed">
-          {paragraphs.map((para, index) => (
-            <p key={index}>{para}</p>
-          ))}
-        </div>
+        {paragraphs.length > 0 ? (
+          <div className="space-y-3.5 text-sm sm:text-base text-[#5A6561] leading-relaxed">
+            {paragraphs.map((para, index) => (
+              <p key={index}>{para}</p>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-[#5A6561] italic">
+            No biography provided yet.
+          </p>
+        )}
       </div>
 
       {/* Areas of Expertise */}
