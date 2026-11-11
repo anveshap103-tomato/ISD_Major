@@ -1,27 +1,50 @@
 import * as contentService from './content.service.js';
 
-// Content Controller Placeholders (Anvesha Patel)
-export const getContentList = async (req, res, next) => {
+const runService = (serviceCall, statusCode = 200) => async (req, res, next) => {
   try {
-    res.status(501).json({ message: 'Get content list not yet implemented' });
+    const data = await serviceCall(req);
+    res.status(statusCode).json({
+      success: true,
+      data,
+      message: 'Operation completed successfully',
+    });
   } catch (error) {
     next(error);
   }
 };
 
-export const addBookmark = async (req, res, next) => {
-  try {
-    res.status(501).json({ message: 'Add bookmark not yet implemented' });
-  } catch (error) {
-    next(error);
+export const getContentList = runService((req) =>
+  contentService.fetchContent(req.query)
+);
+
+export const getContentById = runService((req) =>
+  contentService.fetchContentById(req.params.id)
+);
+
+export const getCategories = runService(() => contentService.fetchCategories());
+
+export const addBookmark = (req, res, next) => {
+  const { contentId } = req.body || {};
+  if (typeof contentId !== 'string' || contentId.trim() === '') {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'BAD_REQUEST',
+        message: 'contentId is required',
+      },
+    });
   }
+
+  return runService(
+    (request) => contentService.createBookmark(request.user.userId, contentId.trim()),
+    201
+  )(req, res, next);
 };
 
-export const getBookmarks = async (req, res, next) => {
-  try {
-    res.status(501).json({ message: 'Get bookmarks not yet implemented' });
-  } catch (error) {
-    next(error);
-  }
-};
+export const getBookmarks = runService((req) =>
+  contentService.fetchBookmarksByUser(req.user.userId)
+);
 
+export const removeBookmark = runService((req) =>
+  contentService.deleteBookmark(req.user.userId, req.params.contentId)
+);
