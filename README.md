@@ -85,12 +85,12 @@ RythCore/
 
 ---
 
-## 5. Getting Started
+## 5. Getting Started & Local Setup
 
 ### Prerequisites
-- Node.js (v18.x or later)
-- PostgreSQL (running locally or via cloud provider)
-- npm or yarn
+- **Node.js**: v18.x or v20.x or later
+- **npm**: v9.x or later
+- **PostgreSQL**: v14+ (running locally or via a hosted cloud provider)
 
 ### Setup Instructions
 
@@ -102,23 +102,90 @@ RythCore/
 
 2. **Install dependencies:**
    ```bash
-   # From the root directory:
-   npm install --workspace=client
-   npm install --workspace=server
+   # Install dependencies across all workspaces from the monorepo root:
+   npm install
    ```
 
 3. **Configure Environment Variables:**
-   - Copy `.env.example` in `server/` to `server/.env` and update `DATABASE_URL` and `JWT_SECRET`.
-   - Copy `.env.example` in `client/` to `client/.env` and configure `VITE_API_BASE_URL`.
+   - **Backend (`server/.env`)**:
+     ```bash
+     cp server/.env.example server/.env
+     ```
+     Update `DATABASE_URL` with your PostgreSQL connection string and `PORT` (default: `5000` or `5001`):
+     ```env
+     PORT=5001
+     NODE_ENV=development
+     DATABASE_URL="postgresql://postgres:password@localhost:5432/ryth_core?schema=public"
+     JWT_SECRET=your_jwt_secret_key_here
+     CLIENT_URL=http://localhost:5173
+     ```
+   - **Frontend (`client/.env`)**:
+     ```bash
+     cp client/.env.example client/.env
+     ```
+     Ensure `VITE_API_BASE_URL` points to your backend:
+     ```env
+     VITE_API_BASE_URL=http://localhost:5001/api
+     ```
 
-4. **Initialize Prisma Database:**
+4. **Initialize & Seed PostgreSQL Database:**
    ```bash
    cd server
+
+   # 1. Validate the Prisma 7 schema
+   npx prisma validate
+
+   # 2. Generate Prisma Client with PostgreSQL adapter
    npx prisma generate
-   npx prisma db push
+
+   # 3. Apply database migrations
+   npx prisma migrate dev
+
+   # 4. Seed the database with verified creator profiles
+   npm run prisma:seed
    ```
 
-5. **Run Development Servers:**
-   - Client: `npm run client:dev` (runs on http://localhost:5173)
-   - Server: `npm run server:dev` (runs on http://localhost:5000)
+5. **Start Development Servers:**
+   From the repository root:
+   ```bash
+   # Start backend API (http://localhost:5001):
+   npm run server:dev
+
+   # Start frontend client (http://localhost:5173):
+   npm run client:dev
+   ```
+
+6. **Production Build:**
+   ```bash
+   # Build the React frontend for production:
+   npm run client:build
+   ```
+
+---
+
+## 6. Creator Discovery Module (Day 2 Status)
+
+The **Creator Discovery** module (`/creators`) is fully database-backed and integrated with PostgreSQL via Prisma ORM 7.
+
+### Features Implemented:
+- **Directory Listing (`/creators`)**: Displays verified domain practitioners with role, organization, location, bio, and top skills.
+- **Search & Debouncing**: Case-insensitive 350ms debounced search querying across creator names, professional titles, organizations, and skills.
+- **Domain Category Filtering**: Fast pill filters for `Cloud & DevOps`, `AI & Machine Learning`, `Frontend & Design`, `Backend & Systems`, `Cybersecurity`, and `Product & Tech Leadership`.
+- **Database Pagination**: Efficient database `take`/`skip` pagination with total count and page indicators.
+- **Detailed Profiles (`/creators/:id`)**: Rich profile views keyed by PostgreSQL UUID, displaying comprehensive biographies, verified social links, experience history, and honors/certifications.
+- **Resilient UI States**: Skeleton loading placeholders, graceful error handling with retry actions, 404 not found views, and race condition protection.
+
+### Available Backend API Endpoints:
+- `GET /api/creators`: Paginated listing with `search`, `category`, `skill`, `page`, and `limit` query parameters.
+- `GET /api/creators/search`: Dedicated auto-complete/search endpoint across practitioner credentials and skills.
+- `GET /api/creators/:id`: Detailed creator profile lookup by UUID.
+- `GET /api/creators/:id/content`: Associated educational resources authored by the creator.
+
+---
+
+## 7. Known Limitations & Teammate Module Hand-offs
+
+- **Page-Local Sorting**: In the directory listing, sorting by Name (A-Z) or Experience applies to the currently fetched page slice (6 items) rather than issuing a global database re-order.
+- **Content Module Hand-off**: `GET /api/creators/:id/content` currently returns an empty collection `{ content: [], count: 0 }` until Anvesha Patel's Content Hub module is integrated.
+- **Connections Module Hand-off**: Connection request and messaging buttons trigger client-side callbacks; backend graph connections will connect once Jatin's Connections module is merged.
 
