@@ -14,6 +14,7 @@ import Register from '../features/auth/Register';
 import CreatorListingPage from '../features/creators/pages/CreatorListingPage';
 import CreatorProfilePage from '../features/creators/pages/CreatorProfilePage';
 import InterestsOnboarding from '../features/onboarding/InterestsOnboarding';
+import ContentHubPage from '../features/content/pages/ContentHubPage';
 
 const HomePlaceholder = () => {
   const navigate = useNavigate();
@@ -152,7 +153,14 @@ export default function AppRoutes() {
           }
         />
 
-        
+        <Route
+          path="/content"
+          element={
+            <ProtectedRoute>
+              <ContentHubPage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
