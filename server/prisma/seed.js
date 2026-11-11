@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import prisma from '../src/config/db.js';
+import { seedContent } from './seed-content.js';
 
 // Realistic seed data matching client/src/features/creators/data/mockCreators.js
 const CREATORS_SEED_DATA = [
@@ -574,6 +575,8 @@ async function seed() {
 
     console.log(`  ✓ Seeded creator: ${creator.name} (${creator.role} at ${creator.company})`);
   }
+
+  await seedContent(prisma);
 
   console.log('\n✅ Database seeding completed successfully:');
   console.log(`   - Users upserted: ${seededUsersCount}`);

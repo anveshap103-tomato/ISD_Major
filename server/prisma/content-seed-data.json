@@ -1,0 +1,146 @@
+{
+  "categories": [
+    {
+      "name": "Technology",
+      "slug": "technology"
+    },
+    {
+      "name": "AI & Machine Learning",
+      "slug": "ai-machine-learning"
+    },
+    {
+      "name": "Design",
+      "slug": "design"
+    },
+    {
+      "name": "Product",
+      "slug": "product"
+    },
+    {
+      "name": "Cloud & DevOps",
+      "slug": "cloud-devops"
+    }
+  ],
+  "contents": [
+    {
+      "type": "ARTICLE",
+      "title": "How the Web Works",
+      "description": "Understand how browsers communicate with servers to display websites. Learn the fundamentals of HTTP, DNS, TCP/IP, URLs, and how web pages are delivered over the internet.",
+      "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Web_standards/How_the_web_works",
+      "author": "MDN Web Docs",
+      "categorySlug": "technology"
+    },
+    {
+      "type": "VIDEO",
+      "title": "How does the Internet work? (Full Course)",
+      "description": "Explore how the internet connects computers around the world. This beginner-friendly course explains routers, switches, ISPs, networks, and the infrastructure behind internet communication.",
+      "url": "https://www.youtube.com/watch?v=zN8YNNHcaZc",
+      "author": "freeCodeCamp.org",
+      "categorySlug": "technology"
+    },
+    {
+      "type": "BOOK",
+      "title": "Code: The Hidden Language of Computer Hardware and Software, 2nd Edition",
+      "description": "Discover how computers work through engaging explanations of binary, logic gates, circuits, and hardware. Charles Petzold uses everyday examples to make complex computing concepts understandable.",
+      "url": "https://www.microsoftpressstore.com/store/code-the-hidden-language-of-computer-ha-9780137909100",
+      "author": "Charles Petzold",
+      "categorySlug": "technology"
+    },
+    {
+      "type": "ARTICLE",
+      "title": "Machine Learning Crash Course",
+      "description": "Learn the foundations of machine learning through interactive lessons covering regression, classification, neural networks, datasets, model evaluation, and responsible AI practices.",
+      "url": "https://developers.google.com/machine-learning/crash-course",
+      "author": "Google for Developers",
+      "categorySlug": "ai-machine-learning"
+    },
+    {
+      "type": "VIDEO",
+      "title": "Machine Learning Crash Course: Intro & What's New",
+      "description": "Discover Google's updated Machine Learning Crash Course and explore how modern machine learning education covers foundational concepts, generative AI, interactive exercises, and practical learning.",
+      "url": "https://www.youtube.com/watch?v=SAUeGtyLsrk",
+      "author": "Google for Developers",
+      "categorySlug": "ai-machine-learning"
+    },
+    {
+      "type": "BOOK",
+      "title": "Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow, 3rd Edition",
+      "description": "Learn practical machine learning through Python examples and exercises. Explore data preparation, regression, classification, neural networks, deep learning, and modern AI architectures.",
+      "url": "https://www.oreilly.com/library/view/hands-on-machine-learning/9781098125967/",
+      "author": "Aurélien Géron",
+      "categorySlug": "ai-machine-learning"
+    },
+    {
+      "type": "ARTICLE",
+      "title": "Usability 101: Introduction to Usability",
+      "description": "Understand the fundamentals of usability and user-centered design. Learn about learnability, efficiency, memorability, user errors, and how usability testing improves digital experiences.",
+      "url": "https://www.nngroup.com/articles/usability-101-introduction-to-usability/",
+      "author": "Jakob Nielsen",
+      "categorySlug": "design"
+    },
+    {
+      "type": "VIDEO",
+      "title": "Figma Tutorial for UI Design - Course for Beginners",
+      "description": "Learn interface design using Figma through practical demonstrations. Explore shapes, typography, colors, components, auto layout, responsive design, prototyping, and complete UI projects.",
+      "url": "https://www.youtube.com/watch?v=jwCmIBJ8Jtc",
+      "author": "freeCodeCamp.org",
+      "categorySlug": "design"
+    },
+    {
+      "type": "BOOK",
+      "title": "The Design of Everyday Things",
+      "description": "Explore the psychology behind effective design and everyday interactions. Learn how affordances, feedback, usability, and human-centered thinking influence the products and interfaces people use.",
+      "url": "https://mitpress.mit.edu/9780262525671/the-design-of-everyday-things/",
+      "author": "Don Norman",
+      "categorySlug": "design"
+    },
+    {
+      "type": "ARTICLE",
+      "title": "What is Product Management? A Guide for Product Managers and Agile Teams",
+      "description": "Understand the role of product management in building successful products. Learn how product managers connect customer needs, business objectives, engineering teams, research, and product strategy.",
+      "url": "https://www.atlassian.com/agile/product-management",
+      "author": "Max Rehkopf",
+      "categorySlug": "product"
+    },
+    {
+      "type": "VIDEO",
+      "title": "What is product management? - Agile Coach",
+      "description": "Learn what product management involves through insights from an experienced Atlassian product manager. Explore product vision, team alignment, shared understanding, and building useful products.",
+      "url": "https://www.youtube.com/watch?v=kzMBIyzq9Ag",
+      "author": "Atlassian",
+      "categorySlug": "product"
+    },
+    {
+      "type": "BOOK",
+      "title": "INSPIRED: How to Create Tech Products Customers Love, 2nd Edition",
+      "description": "Discover how successful technology companies build products customers love. Learn about product discovery, product strategy, team collaboration, customer needs, and effective product development.",
+      "url": "https://www.wiley.com/en-us/INSPIRED%3A%20How%20to%20Create%20Tech%20Products%20Customers%20Love%2C%202nd%20Edition-p-9781119387503",
+      "author": "Marty Cagan",
+      "categorySlug": "product"
+    },
+    {
+      "type": "ARTICLE",
+      "title": "What is DevOps?",
+      "description": "Explore the principles and practices of DevOps, including collaboration between development and operations teams, continuous integration, continuous delivery, automation, reliability, and infrastructure management.",
+      "url": "https://aws.amazon.com/devops/what-is-devops/",
+      "author": "Amazon Web Services",
+      "categorySlug": "cloud-devops"
+    },
+    {
+      "type": "VIDEO",
+      "title": "What is Cloud Computing? | Amazon Web Services",
+      "description": "Get introduced to cloud computing and understand how organizations access computing power, storage, databases, and other services over the internet without maintaining physical infrastructure.",
+      "url": "https://www.youtube.com/watch?v=mxT233EdY5c",
+      "author": "Amazon Web Services",
+      "categorySlug": "cloud-devops"
+    },
+    {
+      "type": "BOOK",
+      "title": "The Phoenix Project: A Novel About IT and DevOps",
+      "description": "Follow an IT team struggling with a critical business project and discover practical DevOps principles through storytelling. Explore workflow management, collaboration, constraints, and continuous improvement.",
+      "url": "https://itrevolution.com/product/the-phoenix-project/",
+      "author": "Gene Kim, Kevin Behr, and George Spafford",
+      "categorySlug": "cloud-devops"
+    }
+  ]
+}
