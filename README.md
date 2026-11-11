@@ -163,29 +163,30 @@ RythCore/
 
 ---
 
-## 6. Creator Discovery Module (Day 2 Status)
+## 6. Creator Discovery Module (Day 3 Status)
 
-The **Creator Discovery** module (`/creators`) is fully database-backed and integrated with PostgreSQL via Prisma ORM 7.
+The **Creator Discovery** module (`/creators` and `/creators/:id`) is integrated with PostgreSQL via Prisma ORM 7 and connected to Jatin's live Connections APIs.
 
 ### Features Implemented:
-- **Directory Listing (`/creators`)**: Displays verified domain practitioners with role, organization, location, bio, and top skills.
-- **Search & Debouncing**: Case-insensitive 350ms debounced search querying across creator names, professional titles, organizations, and skills.
-- **Domain Category Filtering**: Fast pill filters for `Cloud & DevOps`, `AI & Machine Learning`, `Frontend & Design`, `Backend & Systems`, `Cybersecurity`, and `Product & Tech Leadership`.
-- **Database Pagination**: Efficient database `take`/`skip` pagination with total count and page indicators.
-- **Detailed Profiles (`/creators/:id`)**: Rich profile views keyed by PostgreSQL UUID, displaying comprehensive biographies, verified social links, experience history, and honors/certifications.
-- **Resilient UI States**: Skeleton loading placeholders, graceful error handling with retry actions, 404 not found views, and race condition protection.
+- **Directory Listing (`/creators`)**: Displays live PostgreSQL practitioners with role, organization, location, category badge, bio, top skills, and live Connect actions (`mockCreators.js` is not used in production pages).
+- **Multi-Attribute Search & Debouncing**: Case-insensitive 350ms debounced search across creator names, professional titles, organizations, biographies/introductions, and skills (`CreatorSkill.skillName`).
+- **Domain Category Filtering & Pagination**: Filters across the 6 stored categories (`AI & Machine Learning`, `Cloud & DevOps`, `Frontend & Design`, `Backend & Systems`, `Cybersecurity`, `Product & Tech Leadership`), resets pagination synchronously to page 1, and preserves page-local sorting (`(Current page only)` indicator).
+- **Detailed Profiles (`/creators/:id`)**: Loads profiles by `CreatorProfile.id` PostgreSQL UUID, with safe handling of optional/null fields, error-first Retry recovery, and 404 Not Found states.
+- **Live Connections Integration**: Creator cards and profile headers/sidebars integrate `connectionsApi.js`, `useConnectionStatus.js`, and `ConnectButton.jsx` against `/api/connections/*` (`Connect`, `Pending`, `Connected`, `Accept Request`, `Your Profile`/`You`, and `Sign in to Connect`). Profile navigation uses `CreatorProfile.id`; connection requests pass `creator.userId` (`User.id`) as `receiverId`.
+- **Creator Content Showcase**: `ProfileContentShowcase.jsx` loads `GET /api/creators/:id/content` independently from profile loading, supports `ARTICLE`, `VIDEO`, and `BOOK` type badges/filters, thumbnails, descriptions, dates, and localized loading/error/retry/empty states.
 
 ### Available Backend API Endpoints:
-- `GET /api/creators`: Paginated listing with `search`, `category`, `skill`, `page`, and `limit` query parameters.
-- `GET /api/creators/search`: Dedicated auto-complete/search endpoint across practitioner credentials and skills.
-- `GET /api/creators/:id`: Detailed creator profile lookup by UUID.
-- `GET /api/creators/:id/content`: Associated educational resources authored by the creator.
+- `GET /api/creators`: Paginated listing with `search` (including skills), `category`, `skill`, `page`, and `limit` query parameters.
+- `GET /api/creators/search`: Dedicated search endpoint across practitioner credentials and skills.
+- `GET /api/creators/:id`: Detailed creator profile lookup by UUID (exposes both `id` and `userId`).
+- `GET /api/creators/:id/content`: Creator educational resources endpoint.
+- `POST /api/connections/request`, `GET /api/connections`, `PATCH /api/connections/:id`: Jatin's Connections endpoints consumed by Creator Discovery.
 
 ---
 
 ## 7. Known Limitations & Teammate Module Hand-offs
 
 - **Page-Local Sorting**: In the directory listing, sorting by Name (A-Z) or Experience applies to the currently fetched page slice (6 items) rather than issuing a global database re-order.
-- **Content Module Hand-off**: `GET /api/creators/:id/content` currently returns an empty collection `{ content: [], count: 0 }` until Anvesha Patel's Content Hub module is integrated.
-- **Connections Module Hand-off**: Connection request and messaging buttons trigger client-side callbacks; backend graph connections will connect once Jatin's Connections module is merged.
+- **Content Hub Backend Pending**: Anvesha Patel's Content Hub backend (`server/src/modules/content/content.service.js`) currently returns `501 NOT_IMPLEMENTED`, and `Content` lacks a foreign-key relationship to `CreatorProfile` or `User`. `GET /api/creators/:id/content` returns `{ content: [], count: 0 }`, and the Creator Content Showcase renders an empty state until real content records and creator linkage are added.
+- **Connections Navigation Page Pending**: While inline `Connect` and `Accept Request` actions on creator cards and profiles use live `/api/connections/*` endpoints, the top navigation `"Connections"` link in `Navbar.jsx` points to `#` pending Jatin's dedicated Connections dashboard page.
 
