@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '../../../components/layout/Navbar';
 import { fetchCreatorById, fetchCreatorContent } from '../services/creatorsApi';
+import { fetchUserConnections } from '../services/connectionsApi';
 import ProfileHeader from '../components/ProfileHeader';
 import ProfileAbout from '../components/ProfileAbout';
 import ProfileSkills from '../components/ProfileSkills';
 import ProfileExperience from '../components/ProfileExperience';
 import ProfileAchievements from '../components/ProfileAchievements';
+import ConnectButton from '../components/ConnectButton';
 
 // Standard UUID format validator
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -95,10 +97,29 @@ export default function CreatorProfilePage() {
 
   const [creator, setCreator] = useState(null);
   const [contentData, setContentData] = useState(null);
+  const [connectionsData, setConnectionsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [retryCounter, setRetryCounter] = useState(0);
+
+  // Fetch authenticated user's connections once to synchronize header & sidebar Connect buttons
+  const loadConnections = useCallback(async () => {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return;
+    try {
+      const res = await fetchUserConnections();
+      if (res?.data) {
+        setConnectionsData(res.data);
+      }
+    } catch (err) {
+      console.warn('Could not load user connections on profile page:', err?.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadConnections();
+  }, [loadConnections]);
 
   // Fetch creator profile and content from backend API with stale-response protection
   useEffect(() => {
@@ -106,6 +127,9 @@ export default function CreatorProfilePage() {
 
     // Fast-fail on clearly invalid route parameters without firing network requests
     if (!id || !isValidUUID(id)) {
+      setCreator(null);
+      setContentData(null);
+      setError(null);
       setNotFound(true);
       setIsLoading(false);
       return;
@@ -115,6 +139,8 @@ export default function CreatorProfilePage() {
       setIsLoading(true);
       setError(null);
       setNotFound(false);
+      setCreator(null);
+      setContentData(null);
 
       const trimmedId = id.trim();
 
@@ -204,36 +230,7 @@ export default function CreatorProfilePage() {
     return <ProfileSkeleton />;
   }
 
-  // 2. Not Found State (404 or Invalid UUID)
-  if (notFound || !safeCreator) {
-    return (
-      <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans">
-        <Navbar />
-        <main className="max-w-3xl mx-auto px-4 py-16 text-center">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#EBF3EE] flex items-center justify-center text-[#28634F]">
-            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#192521] mb-2">
-            Creator Not Found
-          </h2>
-          <p className="text-sm text-[#5A6561] mb-6 max-w-md mx-auto leading-relaxed">
-            The practitioner profile you are looking for does not exist or has been relocated.
-          </p>
-          <Link
-            to="/creators"
-            style={{ backgroundColor: '#28634F', color: '#FFFFFF' }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#28634F] hover:bg-[#1E4D3D] transition-colors shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#28634F]"
-          >
-            <span>&larr;</span> Back to Creators
-          </Link>
-        </main>
-      </div>
-    );
-  }
-
-  // 3. Error State (Network or 500 error)
+  // 2. Error State (Network or 500 error) — checked before !safeCreator so Retry UI is reachable
   if (error) {
     return (
       <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans">
@@ -271,6 +268,35 @@ export default function CreatorProfilePage() {
     );
   }
 
+  // 3. Not Found State (404 or Invalid UUID)
+  if (notFound || !safeCreator) {
+    return (
+      <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans">
+        <Navbar />
+        <main className="max-w-3xl mx-auto px-4 py-16 text-center">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#EBF3EE] flex items-center justify-center text-[#28634F]">
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#192521] mb-2">
+            Creator Not Found
+          </h2>
+          <p className="text-sm text-[#5A6561] mb-6 max-w-md mx-auto leading-relaxed">
+            The practitioner profile you are looking for does not exist or has been relocated.
+          </p>
+          <Link
+            to="/creators"
+            style={{ backgroundColor: '#28634F', color: '#FFFFFF' }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#28634F] hover:bg-[#1E4D3D] transition-colors shadow-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#28634F]"
+          >
+            <span>&larr;</span> Back to Creators
+          </Link>
+        </main>
+      </div>
+    );
+  }
+
   // 4. Populated Profile View
   return (
     <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans overflow-x-hidden w-full">
@@ -300,7 +326,11 @@ export default function CreatorProfilePage() {
 
         {/* 1. Profile Header Component */}
         <section>
-          <ProfileHeader creator={safeCreator} />
+          <ProfileHeader
+            creator={safeCreator}
+            connectionsData={connectionsData}
+            onConnectionActionSuccess={loadConnections}
+          />
         </section>
 
         {/* Two-Column Responsive Layout */}
@@ -397,9 +427,19 @@ export default function CreatorProfilePage() {
                 Connect with {safeCreator.name} to exchange insights, review career progression milestones, and learn how to navigate {safeCreator.category}.
               </p>
 
-              <div className="p-3 bg-white rounded-xl border border-[#DCE8E0] text-xs text-[#28634F] font-medium flex items-center gap-2">
+              <div className="p-3 bg-white rounded-xl border border-[#DCE8E0] text-xs text-[#28634F] font-medium flex items-center gap-2 mb-4">
                 <span className="w-2 h-2 rounded-full bg-[#28634F] flex-shrink-0 animate-pulse" />
                 <span>Open for mentoring &amp; career advice</span>
+              </div>
+
+              <div className="pt-2">
+                <ConnectButton
+                  variant="profile"
+                  userId={safeCreator.userId}
+                  creatorName={safeCreator.name}
+                  connectionsData={connectionsData}
+                  onActionSuccess={loadConnections}
+                />
               </div>
             </div>
           </div>
