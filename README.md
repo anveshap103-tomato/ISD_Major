@@ -190,3 +190,36 @@ The **Creator Discovery** module (`/creators` and `/creators/:id`) is integrated
 - **Content Hub Backend Pending**: Anvesha Patel's Content Hub backend (`server/src/modules/content/content.service.js`) currently returns `501 NOT_IMPLEMENTED`, and `Content` lacks a foreign-key relationship to `CreatorProfile` or `User`. `GET /api/creators/:id/content` returns `{ content: [], count: 0 }`, and the Creator Content Showcase renders an empty state until real content records and creator linkage are added.
 - **Connections Navigation Page Pending**: While inline `Connect` and `Accept Request` actions on creator cards and profiles use live `/api/connections/*` endpoints, the top navigation `"Connections"` link in `Navbar.jsx` points to `#` pending Jatin's dedicated Connections dashboard page.
 
+---
+
+## 8. Mobile Platforms (Capacitor: Android & iOS)
+
+The same React + Vite frontend (`client/dist`) is packaged for both **Android** and **iOS** via **Capacitor 6** (`com.rythcore.app` / `Ryth Core`).
+
+### Build & Sync Both Platforms
+```bash
+cd client
+npm run build
+npx cap sync android
+npx cap sync ios
+```
+
+### Open & Run on iOS (Xcode & iPhone Simulator)
+1. **Install CocoaPods** (one-time prerequisite on macOS if `pod` is not installed):
+   ```bash
+   brew install cocoapods
+   ```
+2. **Sync iOS & install Pods:**
+   ```bash
+   cd client
+   npm run build
+   npx cap sync ios
+   ```
+3. **Open in Xcode:**
+   ```bash
+   npm run cap:open:ios
+   # Opens client/ios/App/App.xcworkspace (always use .xcworkspace when Pods are installed)
+   ```
+4. **Run on iPhone Simulator:** Select an iPhone simulator target in the Xcode toolbar and press **Run (`Cmd + R`)**.
+5. **Backend URL Note:** `VITE_API_BASE_URL` currently defaults to `http://localhost:5001/api`. For physical devices or production builds, update `VITE_API_BASE_URL` in `client/.env` to a deployed HTTPS backend URL before running `npm run build` and `npx cap sync`.
+
