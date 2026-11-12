@@ -12,12 +12,12 @@
     "cap:open:ios": "cap open ios"
   },
   "dependencies": {
-    "@capacitor/android": "^6.0.0",
-    "@capacitor/app": "^6.0.3",
-    "@capacitor/browser": "^6.0.6",
-    "@capacitor/cli": "^6.0.0",
-    "@capacitor/core": "^6.0.0",
-    "@capacitor/ios": "^6.2.3",
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/browser": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
     "axios": "^1.7.0",
     "lucide-react": "^1.71.0",
     "react": "^18.3.1",
