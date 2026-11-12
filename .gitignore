@@ -32,9 +32,11 @@ Thumbs.db
 *.swp
 *.swo
 
-# Mobile / Capacitor
-android/
-ios/
+# Mobile / Capacitor (native project dirs tracked; build/Pods/Gradle/signing artifacts excluded)
 .capacitor/
 capacitor.config.json.tmp
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
 
