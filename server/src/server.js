@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import feedRoutes from './modules/feed/feed.routes.js';
+import usersRoutes from './modules/users/users.routes.js';
 
 // Import cross-cutting middleware
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -10,12 +12,13 @@ import authRoutes from './modules/auth/auth.routes.js';
 import contentRoutes from './modules/content/content.routes.js';
 import creatorsRoutes from './modules/creators/creators.routes.js';
 import connectionsRoutes from './modules/connections/connections.routes.js';
-import feedRoutes from './modules/feed/feed.routes.js';
+
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
 
 // Base middlewares
 app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
@@ -28,6 +31,7 @@ app.get('/health', (req, res) => {
 
 // Mount module routers
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/creators', creatorsRoutes);
 app.use('/api/connections', connectionsRoutes);

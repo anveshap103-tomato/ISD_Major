@@ -88,11 +88,11 @@
 #### `GET /api/content`
 - **Description**: Fetch content with optional filters.
 - **Query Parameters**:
-  - `type`: `article` | `video` | `book`
+  - `type`: `article` | `video` | `book` (case-insensitive)
   - `category`: string (e.g. `technology`, `design`)
   - `search`: string
   - `page`: integer (default: 1)
-  - `limit`: integer (default: 10)
+  - `limit`: integer (default: 10, maximum: 50)
 - **Response (200 OK)**:
   ```json
   {
@@ -116,6 +116,15 @@
   }
   ```
 
+#### `GET /api/content/:id`
+- **Description**: Retrieve one content item by its UUID.
+- **Response (200 OK)**: Uses the success envelope above and returns the content item, including its category.
+- **Response (404 Not Found)**: Returned when the content item does not exist.
+
+#### `GET /api/content/categories`
+- **Description**: Retrieve the available content categories.
+- **Response (200 OK)**: `{ "success": true, "data": { "items": [] }, "message": "Categories retrieved successfully" }`
+
 #### `POST /api/content/bookmarks`
 - **Auth**: Required
 - **Description**: Bookmark an article, video, or book.
@@ -125,16 +134,27 @@
     "contentId": "uuid"
   }
   ```
+- **Response (201 Created)**: Returns the created bookmark in the standard success envelope.
+- **Response (409 Conflict)**: Returned if the user already bookmarked this content.
 
 #### `GET /api/content/bookmarks`
 - **Auth**: Required
 - **Description**: Retrieve user's saved bookmarks.
+- **Response (200 OK)**: Returns `{ "items": [] }` in the standard success envelope.
+
+#### `DELETE /api/content/bookmarks/:contentId`
+- **Auth**: Required
+- **Description**: Remove the current user's bookmark for the specified content UUID.
+- **Response (200 OK)**: Returns the removed content ID in the standard success envelope.
+- **Response (404 Not Found)**: Returned if the current user has no bookmark for that content.
+
+> **Day 1 status:** Routes and contracts are in place. Content queries and bookmark persistence will be implemented on Day 2; these endpoints currently return the standard `NOT_IMPLEMENTED` error until then.
 
 ---
 
 ### 2.3 Creator Discovery & Profiles (`/api/creators`) — Tushar Singh
 
-> **Phase Note**: The endpoints currently return mock data defined in `server/src/modules/creators/creators.service.js` with identifiers like `creator-1`, `creator-2`. In the subsequent database integration phase, IDs will be PostgreSQL UUIDs and data will be resolved through Prisma models (`CreatorProfile`, `User`, `CreatorSkill`, `CreatorAchievement`).
+> **Implementation Note**: Fully database-backed via PostgreSQL and Prisma ORM 7 (`@prisma/adapter-pg`). All creator records are keyed by standard PostgreSQL UUIDs and resolved through relational queries across `CreatorProfile`, `User`, `CreatorSkill`, and `CreatorAchievement` models.
 
 ---
 
@@ -146,15 +166,15 @@
 - **Query Parameters**:
   | Parameter | Type | Required | Default | Description |
   | :--- | :--- | :--- | :--- | :--- |
-  | `search` | `string` | No | — | Case-insensitive match across `name`, `role`, `company`, or `bio`. |
+  | `search` | `string` | No | — | Case-insensitive match across `user.name`, `professionalTitle`, `organization`, `biography`, `introduction`, and `skills` (`CreatorSkill.skillName`). |
   | `category` | `string` | No | `All` | Filter by domain category (e.g. `Cloud & DevOps`, `AI & Machine Learning`, `Frontend & Design`, `Backend & Systems`, `Cybersecurity`, `Product & Tech Leadership`). |
   | `skill` | `string` | No | — | Filter creators possessing a specific skill tag (e.g. `Kubernetes`, `PyTorch`). |
-  | `page` | `integer` | No | `1` | Page number for pagination. |
+  | `page` | `integer` | No | `1` | Page number for pagination (must be a positive integer $\ge 1$). |
   | `limit` | `integer` | No | `10` | Maximum number of creator records to return per page. |
 
 - **HTTP Status Codes**:
   - `200 OK`: Request succeeded, returns creator array and pagination metadata.
-  - `400 Bad Request`: Malformed or negative pagination values.
+  - `400 Bad Request`: Malformed, non-integer, or negative pagination values.
   - `500 Internal Server Error`: Unhandled server exception.
 
 - **Example 200 OK Response**:
@@ -164,20 +184,23 @@
     "data": {
       "creators": [
         {
-          "id": "creator-1",
+          "id": "1eb08dc3-f87d-4634-8117-477a8fa48e46",
+          "userId": "58685dcd-a036-4117-89fe-b4ae6ee944d7",
           "name": "Aarav Sharma",
           "role": "Staff Cloud Architect",
           "company": "Google Cloud",
           "location": "Bengaluru, India",
+          "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+          "profileImage": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
           "headline": "Architecting planetary-scale distributed cloud systems & mentoring platform engineers.",
           "bio": "Specializing in planetary-scale distributed systems and Kubernetes infrastructure. Passionate about mentoring aspiring platform engineers.",
           "category": "Cloud & DevOps",
           "skills": ["Kubernetes", "GCP", "Terraform", "Go", "Distributed Systems"],
           "experienceYears": 9,
-          "contentCount": 4
+          "contentCount": 0
         }
       ],
-      "total": 1,
+      "total": 8,
       "page": 1,
       "totalPages": 1
     },
@@ -199,16 +222,16 @@
 ---
 
 #### 2.3.2 `GET /api/creators/search`
-- **Purpose**: Dedicated search endpoint optimized for real-time auto-complete and search bars, querying across creator credentials, names, and skill taxonomies.
+- **Purpose**: Dedicated search endpoint querying across creator credentials (`professionalTitle`), display name, company/organization, biography, introduction, and skill taxonomies.
 - **HTTP Method**: `GET`
 - **Endpoint**: `/api/creators/search`
 - **Authentication**: Public
 - **Query Parameters**:
   | Parameter | Type | Required | Default | Description |
   | :--- | :--- | :--- | :--- | :--- |
-  | `q` / `query` | `string` | No | `""` | Search keyword string matching against creator name, role, or skills. |
-  | `skill` | `string` | No | — | Exact skill filter match. |
-  | `expertise` | `string` | No | — | Domain category filter match. |
+  | `q` / `query` | `string` | No | `""` | Search keyword string matching against creator name, role, organization, bio, or skills. |
+  | `skill` | `string` | No | — | Filter creators by matching a specific skill name. |
+  | `expertise` / `category` | `string` | No | — | Domain category filter match (e.g., `AI & Machine Learning`). |
 
 - **HTTP Status Codes**:
   - `200 OK`: Search query executed successfully.
@@ -221,11 +244,14 @@
     "data": {
       "results": [
         {
-          "id": "creator-1",
+          "id": "1eb08dc3-f87d-4634-8117-477a8fa48e46",
+          "userId": "58685dcd-a036-4117-89fe-b4ae6ee944d7",
           "name": "Aarav Sharma",
           "role": "Staff Cloud Architect",
           "company": "Google Cloud",
           "location": "Bengaluru, India",
+          "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+          "profileImage": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
           "category": "Cloud & DevOps",
           "skills": ["Kubernetes", "GCP", "Terraform", "Go", "Distributed Systems"],
           "experienceYears": 9
@@ -252,80 +278,74 @@
 ---
 
 #### 2.3.3 `GET /api/creators/:id`
-- **Purpose**: Retrieve the full profile of a single creator by their unique ID, including headline, biography, location, credentials, and associated skills.
+- **Purpose**: Retrieve the full profile of a single creator by their unique PostgreSQL UUID (`CreatorProfile.id` or `User.id`), including headline, detailed biography, location, credentials, skills, achievements, and social links.
 - **HTTP Method**: `GET`
 - **Endpoint**: `/api/creators/:id`
 - **Authentication**: Public
 - **Route Parameters**:
   | Parameter | Type | Required | Description |
   | :--- | :--- | :--- | :--- |
-  | `id` | `string` | Yes | Unique creator identifier (e.g. `creator-1` during mock phase; UUID in DB phase). |
+  | `id` | `string` | Yes | Unique creator identifier (PostgreSQL UUID format). |
 
 - **HTTP Status Codes**:
-  - `200 OK`: Creator found and profile data returned.
-  - `404 Not Found`: No creator exists matching the supplied ID.
+  - `200 OK`: Creator found and complete profile returned.
+  - `404 Not Found`: No creator exists matching the supplied UUID or malformed UUID provided.
   - `500 Internal Server Error`: Unhandled server exception.
 
-- **Example 200 OK Response (Current Mock Implementation)**:
+- **Example 200 OK Response**:
   ```json
   {
     "success": true,
     "data": {
       "creator": {
-        "id": "creator-1",
+        "id": "1eb08dc3-f87d-4634-8117-477a8fa48e46",
+        "userId": "d7411283-d9ea-4df2-a398-3162a87c5364",
         "name": "Aarav Sharma",
+        "email": "aarav.sharma@example.com",
         "role": "Staff Cloud Architect",
-        "company": "Google Cloud",
-        "location": "Bengaluru, India",
-        "headline": "Architecting planetary-scale distributed cloud systems & mentoring platform engineers.",
-        "bio": "Specializing in planetary-scale distributed systems and Kubernetes infrastructure. Passionate about mentoring aspiring platform engineers.",
-        "category": "Cloud & DevOps",
-        "skills": ["Kubernetes", "GCP", "Terraform", "Go", "Distributed Systems"],
-        "experienceYears": 9,
-        "contentCount": 4
-      }
-    },
-    "message": "Creator profile retrieved successfully"
-  }
-  ```
-
-- **Example 200 OK Response (Planned Prisma/PostgreSQL DB-Backed Phase)**:
-  ```json
-  {
-    "success": true,
-    "data": {
-      "creator": {
-        "id": "c4b1a78e-6c2e-4b95-a223-9f5e1f0e4d01",
-        "userId": "u1a9f8b2-3c4d-4e5f-a6b7-8c9d0e1f2a3b",
-        "name": "Aarav Sharma",
         "professionalTitle": "Staff Cloud Architect",
+        "company": "Google Cloud",
         "organization": "Google Cloud",
         "location": "Bengaluru, India",
+        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+        "profileImage": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+        "headline": "Architecting planetary-scale distributed cloud systems & mentoring platform engineers.",
         "introduction": "Architecting planetary-scale distributed cloud systems & mentoring platform engineers.",
+        "bio": "Specializing in planetary-scale distributed systems and Kubernetes infrastructure. Passionate about mentoring aspiring platform engineers.",
         "biography": "Specializing in planetary-scale distributed systems and Kubernetes infrastructure. Passionate about mentoring aspiring platform engineers.",
-        "profileImage": "https://images.unsplash.com/photo-1534528741775-53994a69daeb",
+        "detailedBio": [
+          "Specializing in planetary-scale distributed systems and Kubernetes infrastructure. Passionate about mentoring aspiring platform engineers."
+        ],
+        "category": "Cloud & DevOps",
+        "experienceYears": 9,
+        "expertiseAreas": [
+          { "area": "Cloud Architecture", "description": "Designing multi-region disaster-resilient systems." },
+          { "area": "Kubernetes & Containers", "description": "Production orchestration, service mesh & GitOps." }
+        ],
+        "experienceHistory": [
+          { "role": "Staff Cloud Architect", "company": "Google Cloud", "period": "2022 - Present", "description": "Leading architecture for enterprise clients." }
+        ],
         "socialLinks": {
           "github": "https://github.com",
           "linkedin": "https://linkedin.com",
           "twitter": "https://twitter.com",
           "website": "https://aaravsharma.dev"
         },
-        "skills": [
-          { "id": "s1", "skillName": "Kubernetes" },
-          { "id": "s2", "skillName": "GCP" },
-          { "id": "s3", "skillName": "Terraform" }
-        ],
+        "skills": ["Kubernetes", "GCP", "Terraform", "Go", "Distributed Systems"],
         "achievements": [
           {
-            "id": "a1",
+            "id": "766e4a29-b68a-45c1-90ef-8671fc51c223",
             "title": "CNCF Community Ambassador",
+            "issuer": "Cloud Native Computing Foundation",
             "issuingOrganization": "Cloud Native Computing Foundation",
             "achievementType": "AWARD",
-            "year": "2025"
+            "year": "2025",
+            "description": "Recognized for contributions to the Kubernetes mentorship program."
           }
         ],
-        "createdAt": "2026-11-07T00:00:00.000Z",
-        "updatedAt": "2026-11-07T00:00:00.000Z"
+        "contentCount": 0,
+        "createdAt": "2026-11-08T00:00:00.000Z",
+        "updatedAt": "2026-11-08T00:00:00.000Z"
       }
     },
     "message": "Creator profile retrieved successfully"
@@ -338,7 +358,7 @@
     "success": false,
     "error": {
       "code": "NOT_FOUND",
-      "message": "Creator with ID 'creator-999' not found"
+      "message": "Creator with ID '00000000-0000-0000-0000-000000000000' not found"
     }
   }
   ```
@@ -346,18 +366,22 @@
 ---
 
 #### 2.3.4 `GET /api/creators/:id/content`
-- **Purpose**: Retrieve curated educational content (articles, videos, resources) published or authored by a specific creator.
+- **Purpose**: Retrieve curated educational resources and content published by a specific creator.
 - **HTTP Method**: `GET`
 - **Endpoint**: `/api/creators/:id/content`
 - **Authentication**: Public
 - **Route Parameters**:
   | Parameter | Type | Required | Description |
   | :--- | :--- | :--- | :--- |
-  | `id` | `string` | Yes | Unique creator identifier. |
+  | `id` | `string` | Yes | Unique creator identifier (PostgreSQL UUID format). |
+
+- **Integration Status**:
+  > **Teammate Integration Notice**: Returns `{ creatorId, creatorName, content: [], count: 0 }` for existing creators until Anvesha Patel's Content Hub persistence (`server/src/modules/content/content.service.js`, currently returning `501 NOT_IMPLEMENTED`) and a creator/user foreign-key relationship on `Content` are implemented. Non-existent or invalid creator IDs return `404 Not Found`.
+  > When live content items are returned, `ProfileContentShowcase.jsx` expects `id`, `title`, `type` (`ARTICLE` | `VIDEO` | `BOOK`), `description`, `url`, optional `thumbnail` / `thumbnailUrl`, optional `category`, and `publishedAt` / `createdAt`.
 
 - **HTTP Status Codes**:
-  - `200 OK`: Request succeeded, returns array of content items (may be empty `[]`).
-  - `404 Not Found`: Creator with the specified ID does not exist.
+  - `200 OK`: Request succeeded, returns creator identity and content array.
+  - `404 Not Found`: Creator with the specified UUID does not exist.
   - `500 Internal Server Error`: Unhandled server exception.
 
 - **Example 200 OK Response**:
@@ -365,25 +389,10 @@
   {
     "success": true,
     "data": {
-      "creatorId": "creator-1",
+      "creatorId": "1eb08dc3-f87d-4634-8117-477a8fa48e46",
       "creatorName": "Aarav Sharma",
-      "content": [
-        {
-          "id": "content-101",
-          "title": "Designing Zero-Downtime Multi-Region Kubernetes Architectures",
-          "type": "article",
-          "url": "https://example.com/k8s-multi-region",
-          "publishedAt": "2026-10-15"
-        },
-        {
-          "id": "content-102",
-          "title": "Consensus Protocols Explained: Raft vs Paxos in Practice",
-          "type": "video",
-          "url": "https://example.com/consensus-protocols",
-          "publishedAt": "2026-10-28"
-        }
-      ],
-      "count": 2
+      "content": [],
+      "count": 0
     },
     "message": "Creator content retrieved successfully"
   }
@@ -395,7 +404,7 @@
     "success": false,
     "error": {
       "code": "NOT_FOUND",
-      "message": "Creator with ID 'invalid-id' not found"
+      "message": "Creator with ID '00000000-0000-0000-0000-000000000000' not found"
     }
   }
   ```
@@ -404,30 +413,41 @@
 
 ### 2.4 Connections & Networking (`/api/connections`) — Jatin
 
+> **Identifier Contract (Creator Discovery Integration):**
+> - Creator profile navigation (`/creators/:id`) uses **`CreatorProfile.id`** (`creator.id`).
+> - Connection API requests (`/api/connections/*`) operate on **`User.id`** (`creator.userId`). Passing `CreatorProfile.id` as `receiverId` will fail with `404 USER_NOT_FOUND`.
+
 #### `POST /api/connections/request`
-- **Auth**: Required
+- **Auth**: Required (`Bearer <token>`)
 - **Description**: Send a connection request to a creator or peer.
 - **Request Body**:
   ```json
   {
-    "receiverId": "uuid",
-    "note": "Hi Sarah, I would love to connect and learn more about your journey in Cloud Computing."
+    "receiverId": "58685dcd-a036-4117-89fe-b4ae6ee944d7",
+    "note": "Hi Aarav, I would love to connect and learn more about your journey in Cloud Computing."
   }
   ```
+- **Responses**:
+  - `201 Created`: Request created (`status: "PENDING"`).
+  - `400 Bad Request` (`SELF_REQUEST`): Attempting to connect with your own `User.id`.
+  - `404 Not Found` (`USER_NOT_FOUND`): `receiverId` does not match any `users.id`.
+  - `409 Conflict` (`ALREADY_CONNECTED` / `REQUEST_ALREADY_EXISTS`): Already connected or pending request already exists.
 
 #### `GET /api/connections`
-- **Auth**: Required
-- **Description**: Fetch all active connections and pending connection requests.
+- **Auth**: Required (`Bearer <token>`)
+- **Description**: Fetch all active connections (`connections`), outgoing pending requests (`sentRequests`), and incoming pending requests (`receivedRequests`) for the authenticated user.
+- **Response (`200 OK`)**: `{ "success": true, "data": { "connections": [], "sentRequests": [], "receivedRequests": [] } }`
 
 #### `PATCH /api/connections/:id`
-- **Auth**: Required
-- **Description**: Accept or reject a connection request.
+- **Auth**: Required (`Bearer <token>`)
+- **Description**: Accept or reject an incoming connection request (`:id` is the `ConnectionRequest.id` UUID).
 - **Request Body**:
   ```json
   {
     "status": "ACCEPTED"
   }
   ```
+  *(Supported values: `"ACCEPTED"`, `"REJECTED"`)*
 
 ---
 

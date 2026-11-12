@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
+import ConnectButton from './ConnectButton.jsx';
+import { openExternalUrl } from '../utils/externalLink.js';
 
 // Domain-specific styling for the category pill & vertical accent indicator
 const DOMAIN_THEMES = {
@@ -28,9 +30,7 @@ const DOMAIN_THEMES = {
   },
 };
 
-export default function ProfileHeader({ creator }) {
-  const [connected, setConnected] = useState(false);
-
+export default function ProfileHeader({ creator, connectionsData = null, onConnectionActionSuccess = null }) {
   const {
     name,
     role,
@@ -43,13 +43,12 @@ export default function ProfileHeader({ creator }) {
     socialLinks,
   } = creator;
 
+  const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'Creator')}&background=DCE8E0&color=28634F&size=160&bold=true`;
+  const avatarSrc = avatar || fallbackAvatar;
+
   const theme = DOMAIN_THEMES[category] || {
     badge: 'bg-[#DCE8E0] text-[#28634F]',
     indicator: 'bg-[#28634F]',
-  };
-
-  const handleConnectClick = () => {
-    setConnected(!connected);
   };
 
   return (
@@ -63,12 +62,12 @@ export default function ProfileHeader({ creator }) {
           {/* Profile Image with subtle border and shadow */}
           <div className="relative flex-shrink-0">
             <img
-              src={avatar}
+              src={avatarSrc}
               alt={name}
               className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl object-cover border-2 border-[#E5E3DC] shadow-sm"
               onError={(e) => {
                 e.currentTarget.onerror = null;
-                e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=DCE8E0&color=28634F&size=160&bold=true`;
+                e.currentTarget.src = fallbackAvatar;
               }}
             />
             {/* Category Marker Dot */}
@@ -82,10 +81,12 @@ export default function ProfileHeader({ creator }) {
           {/* Details */}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold ${theme.badge}`}>
-                {category}
-              </span>
-              {experienceYears && (
+              {category && (
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold ${theme.badge}`}>
+                  {category}
+                </span>
+              )}
+              {experienceYears > 0 && (
                 <span className="text-xs text-[#5A6561] font-medium bg-[#F8F7F2] px-2.5 py-0.5 rounded-lg border border-[#E5E3DC]">
                   {experienceYears}+ years experience
                 </span>
@@ -120,47 +121,25 @@ export default function ProfileHeader({ creator }) {
 
         {/* Right: Actions & Social Links */}
         <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-3 w-full md:w-auto flex-shrink-0">
-          {/* Connect Button (UI only) */}
-          <button
-            type="button"
-            onClick={handleConnectClick}
-            style={
-              connected
-                ? { backgroundColor: '#DCE8E0', color: '#28634F' }
-                : { backgroundColor: '#28634F', color: '#FFFFFF' }
-            }
-            className={`w-full sm:w-auto h-11 px-6 rounded-xl font-semibold text-sm shadow-sm transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer touch-manipulation ${
-              connected
-                ? 'bg-[#DCE8E0] text-[#28634F] hover:bg-[#CADDCF] border border-[#28634F]/30'
-                : 'bg-[#28634F] text-white hover:bg-[#1E4D3D] active:scale-[0.99]'
-            }`}
-          >
-            {connected ? (
-              <>
-                <svg className="w-4 h-4 text-[#28634F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Request Sent</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                <span>Connect</span>
-              </>
-            )}
-          </button>
+          {/* Connect Action (Live API Integration) */}
+          <ConnectButton
+            variant="profile"
+            userId={creator.userId}
+            creatorName={name}
+            connectionsData={connectionsData}
+            onActionSuccess={onConnectionActionSuccess}
+          />
 
-          {/* Social Links */}
+          {/* Social Links (44x44px touch targets; uses @capacitor/browser on native Android) */}
           {socialLinks && (
-            <div className="flex items-center justify-center gap-2 pt-1">
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
               {socialLinks.github && (
                 <a
                   href={socialLinks.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 text-[#5A6561] hover:text-[#192521] rounded-lg hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors"
+                  onClick={(e) => openExternalUrl(socialLinks.github, e)}
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-[#5A6561] hover:text-[#192521] rounded-xl hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors touch-manipulation"
                   title="GitHub Profile"
                   aria-label="GitHub Profile"
                 >
@@ -174,7 +153,8 @@ export default function ProfileHeader({ creator }) {
                   href={socialLinks.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 text-[#5A6561] hover:text-[#192521] rounded-lg hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors"
+                  onClick={(e) => openExternalUrl(socialLinks.linkedin, e)}
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-[#5A6561] hover:text-[#192521] rounded-xl hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors touch-manipulation"
                   title="LinkedIn Profile"
                   aria-label="LinkedIn Profile"
                 >
@@ -188,7 +168,8 @@ export default function ProfileHeader({ creator }) {
                   href={socialLinks.twitter}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 text-[#5A6561] hover:text-[#192521] rounded-lg hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors"
+                  onClick={(e) => openExternalUrl(socialLinks.twitter, e)}
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-[#5A6561] hover:text-[#192521] rounded-xl hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors touch-manipulation"
                   title="X / Twitter Profile"
                   aria-label="X / Twitter Profile"
                 >
@@ -202,7 +183,8 @@ export default function ProfileHeader({ creator }) {
                   href={socialLinks.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 text-[#5A6561] hover:text-[#192521] rounded-lg hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors"
+                  onClick={(e) => openExternalUrl(socialLinks.website, e)}
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-[#5A6561] hover:text-[#192521] rounded-xl hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors touch-manipulation"
                   title="Personal Website"
                   aria-label="Personal Website"
                 >

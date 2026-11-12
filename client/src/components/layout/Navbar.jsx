@@ -8,12 +8,12 @@ export default function Navbar() {
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Creators', path: '/creators' },
-    { name: 'Content', path: '#' },
+    { name: 'Content', path: '/content' },
     { name: 'Connections', path: '#' },
   ];
 
   return (
-    <header className="w-full bg-[#F7F5EF] border-b border-[#E5E3DC] sticky top-0 z-50">
+    <header className="w-full bg-[#F7F5EF] border-b border-[#E5E3DC] sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Left: Brand Logo & Mobile Menu Toggle */}
@@ -22,7 +22,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 -ml-2 text-[#5A6561] hover:text-[#192521] rounded-lg hover:bg-[#EFECE3] transition-colors focus:outline-none focus:ring-2 focus:ring-[#28634F]/30"
+              className="md:hidden min-w-[44px] min-h-[44px] inline-flex items-center justify-center p-2 -ml-2 text-[#5A6561] hover:text-[#192521] rounded-lg hover:bg-[#EFECE3] transition-colors focus:outline-none focus:ring-2 focus:ring-[#28634F]/30 touch-manipulation"
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
             >

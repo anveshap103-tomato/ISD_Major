@@ -59,7 +59,7 @@ const handleRegister = async (e) => {
     localStorage.setItem('token', result.data.token);
     localStorage.setItem('user', JSON.stringify(result.data.user));
 
-    navigate('/');
+    navigate('/onboarding');
   } catch (err) {
     setError(err.message || 'Something went wrong');
   } finally {

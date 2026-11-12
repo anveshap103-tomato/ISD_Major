@@ -22,20 +22,26 @@ export default function ProfileAchievements({ achievements }) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                   </svg>
                 </div>
-                <span className="text-xs font-semibold text-[#D9A66C] bg-[#FDF5EC] px-2.5 py-0.5 rounded-lg border border-[#D9A66C]/30">
-                  {item.year}
-                </span>
+                {item.year && (
+                  <span className="text-xs font-semibold text-[#D9A66C] bg-[#FDF5EC] px-2.5 py-0.5 rounded-lg border border-[#D9A66C]/30">
+                    {item.year}
+                  </span>
+                )}
               </div>
 
               <h3 className="font-serif text-sm sm:text-base font-bold text-[#192521] leading-snug">
                 {item.title}
               </h3>
-              <p className="text-xs font-semibold text-[#28634F] mt-0.5">
-                {item.issuer}
-              </p>
-              <p className="text-xs text-[#5A6561] mt-2 leading-relaxed">
-                {item.description}
-              </p>
+              {item.issuer && (
+                <p className="text-xs font-semibold text-[#28634F] mt-0.5">
+                  {item.issuer}
+                </p>
+              )}
+              {item.description && (
+                <p className="text-xs text-[#5A6561] mt-2 leading-relaxed">
+                  {item.description}
+                </p>
+              )}
             </div>
           </div>
         ))}

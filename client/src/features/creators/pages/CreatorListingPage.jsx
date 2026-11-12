@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../../components/layout/Navbar';
-import { MOCK_CREATORS, CATEGORIES } from '../data/mockCreators';
+import { CREATOR_CATEGORIES } from '../constants/categories';
+import { fetchCreators } from '../services/creatorsApi';
+import { fetchUserConnections } from '../services/connectionsApi';
 import CreatorSearch from '../components/CreatorSearch';
 import CategoryFilter from '../components/CategoryFilter';
 import CreatorGrid from '../components/CreatorGrid';
@@ -9,57 +11,183 @@ import HeroArtwork from '../components/HeroArtwork';
 
 export default function CreatorListingPage() {
   const navigate = useNavigate();
+
+  // Filter & Search states
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('Relevance');
 
-  // Filter and sort creators based on search query, category, and sort option
-  const filteredCreators = useMemo(() => {
-    let result = MOCK_CREATORS.filter((creator) => {
-      // Category filter
-      const matchesCategory =
-        selectedCategory === 'All' || creator.category === selectedCategory;
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6; // 6 cards fit nicely in a 3-column responsive grid
 
-      // Search query
-      const query = searchTerm.trim().toLowerCase();
-      const matchesSearch =
-        query === '' ||
-        creator.name.toLowerCase().includes(query) ||
-        creator.role.toLowerCase().includes(query) ||
-        creator.company.toLowerCase().includes(query) ||
-        creator.bio.toLowerCase().includes(query) ||
-        creator.skills.some((skill) => skill.toLowerCase().includes(query));
+  // API Data states
+  const [creators, setCreators] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCounter, setRetryCounter] = useState(0);
+  const [connectionsData, setConnectionsData] = useState(null);
 
-      return matchesCategory && matchesSearch;
-    });
-
-    // Sorting
-    if (sortBy === 'Name') {
-      result = [...result].sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortBy === 'Experience') {
-      result = [...result].sort((a, b) => b.experienceYears - a.experienceYears);
+  // Fetch authenticated user's connections to synchronize card states
+  useEffect(() => {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token) {
+      fetchUserConnections()
+        .then((res) => {
+          if (res?.data) {
+            setConnectionsData(res.data);
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not load user connections on directory page:', err?.message);
+        });
     }
+  }, []);
 
-    return result;
-  }, [searchTerm, selectedCategory, sortBy]);
+  // 1. Debounce search input (350ms) and reset pagination to page 1 when search updates
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm !== debouncedSearch) {
+        setDebouncedSearch(searchTerm);
+        setCurrentPage(1);
+      }
+    }, 350);
 
+    return () => clearTimeout(timer);
+  }, [searchTerm, debouncedSearch]);
+
+  // 2. Fetch creators from live PostgreSQL backend with stale-response protection
+  useEffect(() => {
+    let ignore = false;
+
+    const executeFetch = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const params = {
+          page: currentPage,
+          limit: pageSize,
+        };
+
+        if (debouncedSearch.trim()) {
+          params.search = debouncedSearch.trim();
+        }
+
+        if (selectedCategory && selectedCategory !== 'All') {
+          params.category = selectedCategory;
+        }
+
+        const response = await fetchCreators(params);
+
+        if (!ignore) {
+          if (response && response.success && response.data) {
+            setCreators(response.data.creators || []);
+            setTotal(response.data.total ?? 0);
+            setTotalPages(response.data.totalPages ?? 1);
+          } else {
+            throw new Error(response?.message || 'Failed to retrieve creators from database');
+          }
+        }
+      } catch (err) {
+        if (!ignore) {
+          console.error('Failed to load creators from live API:', err);
+          setError(err);
+          setCreators([]);
+          setTotal(0);
+          setTotalPages(1);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    executeFetch();
+
+    return () => {
+      ignore = true; // Stale-response protection: cancel effect when parameters change
+    };
+  }, [debouncedSearch, selectedCategory, currentPage, pageSize, retryCounter]);
+
+  // 4. Client-side sorting applied to currently fetched result set
+  const sortedCreators = useMemo(() => {
+    if (!creators || creators.length === 0) return [];
+    const list = [...creators];
+
+    if (sortBy === 'Name') {
+      return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+    if (sortBy === 'Experience') {
+      return list.sort((a, b) => (b.experienceYears || 0) - (a.experienceYears || 0));
+    }
+    return list; // 'Relevance' / default order from database
+  }, [creators, sortBy]);
+
+  // Reset all filters and search input back to defaults
   const handleResetFilters = () => {
     setSearchTerm('');
+    setDebouncedSearch('');
     setSelectedCategory('All');
     setSortBy('Relevance');
+    setCurrentPage(1);
   };
 
-  const handleViewProfile = (creator) => {
-    navigate(`/creators/${creator.id}`);
+  // Category change handler with immediate pagination reset
+  const handleSelectCategory = (category) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
   };
+
+  // Immediate search submission (bypasses debounce on Enter or Search button click)
+  const handleSearchSubmit = () => {
+    setDebouncedSearch(searchTerm);
+    setCurrentPage(1);
+  };
+
+  // Retry action to reload data with active parameters
+  const handleRetry = () => {
+    setRetryCounter((c) => c + 1);
+  };
+
+  // Navigate to detailed profile using PostgreSQL UUID
+  const handleViewProfile = (creator) => {
+    if (creator && creator.id) {
+      navigate(`/creators/${creator.id}`);
+    }
+  };
+
+  // Compact pagination items with ellipsis when totalPages > 5
+  const paginationItems = useMemo(() => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+    const sorted = Array.from(pages)
+      .filter((p) => p >= 1 && p <= totalPages)
+      .sort((a, b) => a - b);
+
+    const items = [];
+    sorted.forEach((p, idx) => {
+      if (idx > 0 && p - sorted[idx - 1] > 1) {
+        items.push(`ellipsis-${sorted[idx - 1]}-${p}`);
+      }
+      items.push(p);
+    });
+    return items;
+  }, [currentPage, totalPages]);
 
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans overflow-x-hidden w-full">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans overflow-x-clip w-full">
       {/* Top Navigation Bar with Mobile Drawer */}
       <Navbar />
 
-      {/* Main Container */}
-      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-10 flex-1">
+      {/* Main Container with Safe-Area Bottom Padding */}
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-10 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-10 flex-1">
         {/* Responsive Hero Section */}
         <section className="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 md:gap-8 pb-6 sm:pb-8">
           <div className="max-w-2xl text-left z-10 w-full">
@@ -100,16 +228,21 @@ export default function CreatorListingPage() {
           <CreatorSearch
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
-            onClear={() => setSearchTerm('')}
+            onClear={() => {
+              setSearchTerm('');
+              setDebouncedSearch('');
+              setCurrentPage(1);
+            }}
+            onSearchSubmit={handleSearchSubmit}
           />
         </section>
 
         {/* Category Filters Carousel */}
         <section className="mb-4 sm:mb-6">
           <CategoryFilter
-            categories={CATEGORIES}
+            categories={CREATOR_CATEGORIES}
             selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
+            onSelectCategory={handleSelectCategory}
           />
         </section>
 
@@ -117,17 +250,31 @@ export default function CreatorListingPage() {
         <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-4 text-xs sm:text-sm text-[#5A6561] mb-5 sm:mb-6">
           <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2">
             <span>
-              Showing{' '}
-              <strong className="text-[#192521] font-semibold">
-                {filteredCreators.length}
-              </strong>{' '}
-              of {MOCK_CREATORS.length} practitioners
+              {isLoading ? (
+                <span>Loading practitioners...</span>
+              ) : error ? (
+                <span className="text-[#B84E3C]">Error loading creators</span>
+              ) : (
+                <>
+                  Showing{' '}
+                  <strong className="text-[#192521] font-semibold">
+                    {sortedCreators.length}
+                  </strong>{' '}
+                  of {total} practitioners
+                  {totalPages > 1 && (
+                    <span className="text-[#5A6561]/80 ml-1">
+                      (Page {currentPage} of {totalPages})
+                    </span>
+                  )}
+                </>
+              )}
             </span>
-            {(searchTerm || selectedCategory !== 'All') && (
+
+            {(searchTerm || selectedCategory !== 'All') && !isLoading && (
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-[#28634F] hover:underline font-semibold underline-offset-2 ml-1 sm:ml-2 transition-colors cursor-pointer touch-manipulation"
+                className="inline-flex items-center min-h-[44px] px-2.5 py-1.5 text-xs sm:text-sm text-[#28634F] hover:bg-[#EBF3EE] font-semibold underline underline-offset-2 ml-1 sm:ml-2 rounded-lg transition-colors cursor-pointer touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#28634F]"
               >
                 Reset filters
               </button>
@@ -139,15 +286,17 @@ export default function CreatorListingPage() {
             <label htmlFor="sort-select" className="text-xs font-medium text-[#5A6561] flex-shrink-0">
               Sort by:
             </label>
-            <div className="relative">
+            <div className="relative flex items-center gap-1.5">
               <select
                 id="sort-select"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white border border-[#E5E3DC] rounded-lg px-3 py-1.5 text-xs font-semibold text-[#192521] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#28634F] focus:border-[#28634F] cursor-pointer pr-7 appearance-none touch-manipulation min-h-[36px]"
+                disabled={isLoading || !!error}
+                className="bg-white border border-[#E5E3DC] rounded-xl px-3 py-2 text-xs font-semibold text-[#192521] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#28634F] focus:border-[#28634F] cursor-pointer pr-8 appearance-none touch-manipulation min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Sort practitioners on current page"
               >
                 <option value="Relevance">Relevance</option>
-                <option value="Experience">Experience</option>
+                <option value="Experience">Experience (High to Low)</option>
                 <option value="Name">Name (A-Z)</option>
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#5A6561]">
@@ -160,17 +309,89 @@ export default function CreatorListingPage() {
                 </svg>
               </div>
             </div>
+            {totalPages > 1 && sortBy !== 'Relevance' && (
+              <span className="text-[11px] text-[#5A6561]/80 italic whitespace-nowrap">
+                (Current page only)
+              </span>
+            )}
           </div>
         </section>
 
-        {/* Creator Cards Grid */}
+        {/* Creator Cards Grid with Loading, Error, and Empty states */}
         <section>
           <CreatorGrid
-            creators={filteredCreators}
+            creators={sortedCreators}
+            isLoading={isLoading}
+            error={error}
+            onRetry={handleRetry}
             onViewProfile={handleViewProfile}
             onResetFilters={handleResetFilters}
+            connectionsData={connectionsData}
           />
         </section>
+
+        {/* Pagination Controls */}
+        {!isLoading && !error && totalPages > 1 && (
+          <nav aria-label="Pagination" className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-[#E5E3DC]">
+            <p className="text-xs sm:text-sm text-[#5A6561]">
+              Showing page <strong className="text-[#192521] font-semibold">{currentPage}</strong> of{' '}
+              <strong className="text-[#192521] font-semibold">{totalPages}</strong> ({total} total practitioners)
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                className="min-h-[44px] px-3.5 py-2 text-xs font-semibold text-[#192521] bg-white border border-[#E5E3DC] rounded-xl hover:bg-[#EFECE3] disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-colors touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#28634F] cursor-pointer"
+                aria-label="Previous page"
+              >
+                &larr; Prev
+              </button>
+
+              {paginationItems.map((item) => {
+                if (typeof item === 'string') {
+                  return (
+                    <span
+                      key={item}
+                      className="min-w-[32px] min-h-[44px] inline-flex items-center justify-center text-xs font-semibold text-[#5A6561]"
+                      aria-hidden="true"
+                    >
+                      &hellip;
+                    </span>
+                  );
+                }
+                const pageNum = item;
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum)}
+                    style={pageNum === currentPage ? { backgroundColor: '#28634F', color: '#FFFFFF' } : {}}
+                    className={`min-w-[44px] min-h-[44px] px-2 text-xs font-semibold rounded-xl transition-colors touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#28634F] cursor-pointer ${
+                      pageNum === currentPage
+                        ? 'bg-[#28634F] text-white shadow-sm'
+                        : 'bg-white text-[#192521] border border-[#E5E3DC] hover:bg-[#EFECE3]'
+                    }`}
+                    aria-current={pageNum === currentPage ? 'page' : undefined}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                className="min-h-[44px] px-3.5 py-2 text-xs font-semibold text-[#192521] bg-white border border-[#E5E3DC] rounded-xl hover:bg-[#EFECE3] disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-colors touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#28634F] cursor-pointer"
+                aria-label="Next page"
+              >
+                Next &rarr;
+              </button>
+            </div>
+          </nav>
+        )}
       </main>
     </div>
   );

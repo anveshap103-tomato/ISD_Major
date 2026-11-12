@@ -19,18 +19,24 @@ export default function ProfileExperience({ experienceHistory }) {
               <h3 className="font-serif text-base sm:text-lg font-bold text-[#192521] leading-snug">
                 {item.role}
               </h3>
-              <span className="text-xs font-semibold text-[#5A6561] bg-[#F8F7F2] px-2.5 py-0.5 rounded-lg border border-[#E5E3DC] w-fit">
-                {item.period}
-              </span>
+              {item.period && (
+                <span className="text-xs font-semibold text-[#5A6561] bg-[#F8F7F2] px-2.5 py-0.5 rounded-lg border border-[#E5E3DC] w-fit">
+                  {item.period}
+                </span>
+              )}
             </div>
 
-            <p className="text-xs sm:text-sm font-semibold text-[#28634F] mb-2">
-              {item.company}
-            </p>
+            {item.company && (
+              <p className="text-xs sm:text-sm font-semibold text-[#28634F] mb-2">
+                {item.company}
+              </p>
+            )}
 
-            <p className="text-xs sm:text-sm text-[#5A6561] leading-relaxed">
-              {item.description}
-            </p>
+            {item.description && (
+              <p className="text-xs sm:text-sm text-[#5A6561] leading-relaxed">
+                {item.description}
+              </p>
+            )}
           </div>
         ))}
       </div>
