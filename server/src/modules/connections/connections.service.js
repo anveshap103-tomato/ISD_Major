@@ -163,3 +163,20 @@ export const updateConnectionStatus = async (requestId, userId, status) => {
     return updatedRequest;
   });
 };
+
+export const discoverUsers = async (userId) => {
+  return prisma.user.findMany({
+    where: {
+      id: { not: userId },
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      avatarUrl: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+};
