@@ -13,6 +13,7 @@ import Login from '../features/auth/Login';
 import Register from '../features/auth/Register';
 import CreatorListingPage from '../features/creators/pages/CreatorListingPage';
 import CreatorProfilePage from '../features/creators/pages/CreatorProfilePage';
+import ConnectionsPage from '../features/connections/pages/ConnectionsPage';
 
 const HomePlaceholder = () => {
   const navigate = useNavigate();
@@ -141,6 +142,15 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+  path="/connections"
+  element={
+    <ProtectedRoute>
+      <ConnectionsPage />
+    </ProtectedRoute>
+  }
+/>
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
