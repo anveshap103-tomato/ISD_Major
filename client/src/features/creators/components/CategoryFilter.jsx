@@ -59,8 +59,8 @@ const getCategoryIcon = (category, isActive) => {
 
 export default function CategoryFilter({ categories, selectedCategory, onSelectCategory }) {
   return (
-    <div className="w-full overflow-hidden">
-      <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scroll-smooth no-scrollbar py-1 px-4 -mx-4 sm:mx-0 sm:px-0 touch-pan-x">
+    <div className="w-full" role="region" aria-label="Creator domain categories">
+      <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto scroll-smooth no-scrollbar py-1.5 px-4 -mx-4 sm:mx-0 sm:px-0 touch-pan-x">
         {categories.map((category) => {
           const isActive = selectedCategory === category;
 
@@ -68,13 +68,14 @@ export default function CategoryFilter({ categories, selectedCategory, onSelectC
             <button
               key={category}
               type="button"
+              aria-pressed={isActive}
               onClick={() => onSelectCategory(category)}
               style={
                 isActive
                   ? { backgroundColor: '#28634F', color: '#FFFFFF', borderColor: '#28634F' }
                   : undefined
               }
-              className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-150 border cursor-pointer flex-shrink-0 touch-manipulation min-h-[38px] sm:min-h-[42px] ${
+              className={`inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-150 border cursor-pointer flex-shrink-0 touch-manipulation min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#28634F] focus-visible:ring-offset-1 ${
                 isActive
                   ? 'bg-[#28634F] text-white border-[#28634F] shadow-sm ring-1 ring-[#28634F]'
                   : 'bg-white text-[#192521] border-[#E5E3DC] hover:border-[#28634F] hover:bg-[#F0F5F2] hover:text-[#28634F]'
