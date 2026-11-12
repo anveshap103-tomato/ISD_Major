@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { openExternalUrl } from '../utils/externalLink.js';
 
 const CONTENT_TYPE_CONFIG = {
   ARTICLE: {
@@ -154,6 +155,7 @@ function ContentItemCard({ item }) {
         href={navigation.href}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={(e) => openExternalUrl(navigation.href, e)}
         className={sharedCardClass}
       >
         {cardContent}

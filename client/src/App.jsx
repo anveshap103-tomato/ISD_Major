@@ -7,7 +7,9 @@ function App() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return undefined;
 
+    let isCancelled = false;
     let listenerHandle;
+
     CapacitorApp.addListener('backButton', ({ canGoBack }) => {
       if (canGoBack) {
         window.history.back();
@@ -15,10 +17,15 @@ function App() {
         CapacitorApp.exitApp();
       }
     }).then((handle) => {
-      listenerHandle = handle;
+      if (isCancelled) {
+        handle.remove();
+      } else {
+        listenerHandle = handle;
+      }
     });
 
     return () => {
+      isCancelled = true;
       if (listenerHandle) {
         listenerHandle.remove();
       }
