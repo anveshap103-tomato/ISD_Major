@@ -84,8 +84,31 @@ export const fetchContent = async ({ type, category, search, page, limit } = {})
   };
 };
 
-export const fetchContentById = async () => {
-  throw notImplemented('Content details');
+export const fetchContentById = async (id) => {
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (typeof id !== 'string' || !uuidPattern.test(id.trim())) {
+    throw badRequest('Invalid content ID: must be a valid UUID');
+  }
+
+  const content = await prisma.content.findUnique({
+    where: { id: id.trim() },
+    include: { category: { select: { name: true, slug: true } } },
+  });
+
+  if (!content) {
+    const error = new Error(`Content with ID '${id.trim()}' not found`);
+    error.statusCode = 404;
+    error.code = 'NOT_FOUND';
+    throw error;
+  }
+
+  const { category: contentCategory, ...item } = content;
+  return {
+    ...item,
+    type: item.type.toLowerCase(),
+    category: contentCategory.name,
+    categorySlug: contentCategory.slug,
+  };
 };
 
 export const fetchCategories = async () => {
