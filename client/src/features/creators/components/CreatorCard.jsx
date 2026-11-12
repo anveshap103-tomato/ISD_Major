@@ -53,7 +53,7 @@ export default function CreatorCard({ creator, onViewProfile, connectionsData = 
   };
 
   return (
-    <article className="bg-white border border-[#E5E3DC] rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-sm hover:shadow-md hover:border-[#D1CEC4] transition-all duration-200 flex flex-col justify-between h-full group">
+    <article className="min-w-0 bg-white border border-[#E5E3DC] rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-sm hover:shadow-md hover:border-[#D1CEC4] transition-all duration-200 flex flex-col justify-between h-full group">
       <div>
         {/* Top Header: Vertical Accent Indicator, Avatar, Info & External Link */}
         <div className="flex items-start justify-between gap-2.5 sm:gap-3">
@@ -101,11 +101,11 @@ export default function CreatorCard({ creator, onViewProfile, connectionsData = 
             </div>
           </div>
 
-          {/* External Profile Link Icon */}
+          {/* External Profile Link Icon (44x44px touch target) */}
           <button
             type="button"
             onClick={handleProfileClick}
-            className="p-1.5 text-[#5A6561] hover:text-[#28634F] transition-colors rounded-lg hover:bg-[#EFECE3] flex-shrink-0 touch-manipulation cursor-pointer"
+            className="min-w-[44px] min-h-[44px] -mr-2 -mt-2 inline-flex items-center justify-center p-2.5 text-[#5A6561] hover:text-[#28634F] transition-colors rounded-xl hover:bg-[#EFECE3] flex-shrink-0 touch-manipulation cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#28634F]/30"
             title="Open Profile"
             aria-label={`Open profile of ${name}`}
           >
@@ -137,7 +137,7 @@ export default function CreatorCard({ creator, onViewProfile, connectionsData = 
         )}
 
         {/* Bio */}
-        <p className="mt-2.5 sm:mt-3 text-xs sm:text-sm text-[#5A6561] leading-relaxed line-clamp-3">
+        <p className="mt-2.5 sm:mt-3 text-xs sm:text-sm text-[#5A6561] leading-relaxed line-clamp-3 break-words">
           {bio || 'Practitioner on Ryth Core.'}
         </p>
 
@@ -164,7 +164,7 @@ export default function CreatorCard({ creator, onViewProfile, connectionsData = 
       </div>
 
       {/* Card Actions: Connect & View Profile */}
-      <div className="mt-4 sm:mt-5 pt-3 sm:pt-3.5 border-t border-[#EDEBE4] flex items-center gap-2">
+      <div className="mt-4 sm:mt-5 pt-3 sm:pt-3.5 border-t border-[#EDEBE4] flex flex-wrap sm:flex-nowrap items-center gap-2">
         <ConnectButton
           variant="card"
           userId={creator.userId}
@@ -174,7 +174,7 @@ export default function CreatorCard({ creator, onViewProfile, connectionsData = 
         <button
           type="button"
           onClick={handleProfileClick}
-          className="flex-1 h-9 inline-flex justify-center items-center gap-1.5 px-3 text-xs sm:text-sm font-semibold text-[#192521] bg-white hover:bg-[#EFECE3] border border-[#E5E3DC] rounded-xl shadow-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#28634F]/30 active:scale-[0.99] cursor-pointer touch-manipulation"
+          className="flex-1 min-w-[120px] min-h-[44px] inline-flex justify-center items-center gap-1.5 px-3 text-xs sm:text-sm font-semibold text-[#192521] bg-white hover:bg-[#EFECE3] border border-[#E5E3DC] rounded-xl shadow-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#28634F]/30 active:scale-[0.99] cursor-pointer touch-manipulation"
         >
           <span>View Profile</span>
           <svg className="w-3.5 h-3.5 text-[#5A6561]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -20,7 +20,7 @@ const isValidUUID = (id) => typeof id === 'string' && UUID_REGEX.test(id.trim())
  */
 function ProfileSkeleton() {
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans overflow-x-hidden w-full animate-pulse">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans overflow-x-clip w-full animate-pulse">
       <Navbar />
       <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-10 flex-1 space-y-6 sm:space-y-8">
         {/* Breadcrumb Skeleton */}
@@ -338,17 +338,17 @@ export default function CreatorProfilePage() {
 
   // 4. Populated Profile View
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans overflow-x-hidden w-full">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans overflow-x-clip w-full">
       {/* Navigation Header */}
       <Navbar />
 
-      {/* Main Container */}
-      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-10 flex-1 space-y-6 sm:space-y-8">
+      {/* Main Container with Safe-Area Bottom Padding */}
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-10 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-10 flex-1 space-y-6 sm:space-y-8">
         {/* Navigation Breadcrumb & Back Link */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <Link
             to="/creators"
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#28634F] hover:text-[#1E4D3D] transition-colors group w-fit cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#28634F] rounded"
+            className="inline-flex items-center gap-2 min-h-[44px] text-xs sm:text-sm font-semibold text-[#28634F] hover:text-[#1E4D3D] transition-colors group w-fit cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#28634F] rounded-lg pr-2"
           >
             <span className="group-hover:-translate-x-1 transition-transform">&larr;</span>
             <span>Back to Creator Discovery</span>

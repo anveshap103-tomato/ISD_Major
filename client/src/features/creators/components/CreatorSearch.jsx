@@ -27,21 +27,25 @@ export default function CreatorSearch({ searchTerm, onSearchChange, onClear, onS
           </svg>
         </div>
 
-        {/* Responsive Input: min-w-0 prevents flex overflow; concise placeholder avoids clipping */}
+        {/* Responsive Input: 16px font prevents mobile WebView auto-zoom; min-w-0 prevents flex overflow */}
         <input
           type="text"
+          inputMode="search"
+          enterKeyHint="search"
+          autoComplete="off"
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search by name, role, or skill..."
-          className="flex-1 min-w-0 bg-transparent text-xs sm:text-sm md:text-base text-[#192521] placeholder:text-[#5A6561]/65 focus:outline-none px-1.5 sm:px-2 py-2"
+          aria-label="Search creators by name, role, organization, or skill"
+          className="flex-1 min-w-0 min-h-[44px] bg-transparent text-base text-[#192521] placeholder:text-sm sm:placeholder:text-base placeholder:text-[#5A6561]/65 focus:outline-none px-1.5 sm:px-2 py-2"
         />
 
-        {/* Clear Button */}
+        {/* Clear Button (44x44px touch target) */}
         {searchTerm && (
           <button
             type="button"
             onClick={onClear}
-            className="p-1.5 mr-1 text-[#5A6561] hover:text-[#192521] transition-colors flex-shrink-0 touch-manipulation"
+            className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-[#5A6561] hover:text-[#192521] rounded-lg hover:bg-[#EFECE3]/60 transition-colors flex-shrink-0 touch-manipulation cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#28634F]/40"
             title="Clear search"
             aria-label="Clear search input"
           >
@@ -51,11 +55,11 @@ export default function CreatorSearch({ searchTerm, onSearchChange, onClear, onS
           </button>
         )}
 
-        {/* Search Button with comfortable touch target */}
+        {/* Search Button with >=44px touch target */}
         <button
           type="submit"
           style={{ backgroundColor: '#28634F', color: '#FFFFFF' }}
-          className="h-10 sm:h-11 bg-[#28634F] hover:bg-[#1E4D3D] text-white text-xs sm:text-sm font-semibold px-3.5 sm:px-5 rounded-lg sm:rounded-xl shadow-sm transition-colors duration-150 flex items-center gap-1.5 flex-shrink-0 cursor-pointer touch-manipulation"
+          className="min-h-[44px] bg-[#28634F] hover:bg-[#1E4D3D] text-white text-xs sm:text-sm font-semibold px-3.5 sm:px-5 rounded-lg sm:rounded-xl shadow-sm transition-colors duration-150 flex items-center gap-1.5 flex-shrink-0 cursor-pointer touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#28634F]"
         >
           <span>Search</span>
           <span className="text-sm sm:text-base leading-none">&rarr;</span>

@@ -161,13 +161,33 @@ export default function CreatorListingPage() {
     }
   };
 
+  // Compact pagination items with ellipsis when totalPages > 5
+  const paginationItems = useMemo(() => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+    const sorted = Array.from(pages)
+      .filter((p) => p >= 1 && p <= totalPages)
+      .sort((a, b) => a - b);
+
+    const items = [];
+    sorted.forEach((p, idx) => {
+      if (idx > 0 && p - sorted[idx - 1] > 1) {
+        items.push(`ellipsis-${sorted[idx - 1]}-${p}`);
+      }
+      items.push(p);
+    });
+    return items;
+  }, [currentPage, totalPages]);
+
   return (
-    <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans overflow-x-hidden w-full">
+    <div className="min-h-screen bg-[#F7F5EF] text-[#192521] flex flex-col font-sans overflow-x-clip w-full">
       {/* Top Navigation Bar with Mobile Drawer */}
       <Navbar />
 
-      {/* Main Container */}
-      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-10 flex-1">
+      {/* Main Container with Safe-Area Bottom Padding */}
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-10 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-10 flex-1">
         {/* Responsive Hero Section */}
         <section className="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 md:gap-8 pb-6 sm:pb-8">
           <div className="max-w-2xl text-left z-10 w-full">
@@ -254,7 +274,7 @@ export default function CreatorListingPage() {
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-[#28634F] hover:underline font-semibold underline-offset-2 ml-1 sm:ml-2 transition-colors cursor-pointer touch-manipulation focus:outline-none focus:ring-1 focus:ring-[#28634F] rounded"
+                className="inline-flex items-center min-h-[44px] px-2.5 py-1.5 text-xs sm:text-sm text-[#28634F] hover:bg-[#EBF3EE] font-semibold underline underline-offset-2 ml-1 sm:ml-2 rounded-lg transition-colors cursor-pointer touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#28634F]"
               >
                 Reset filters
               </button>
@@ -272,7 +292,7 @@ export default function CreatorListingPage() {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 disabled={isLoading || !!error}
-                className="bg-white border border-[#E5E3DC] rounded-lg px-3 py-1.5 text-xs font-semibold text-[#192521] shadow-sm focus:outline-none focus:ring-1 focus:ring-[#28634F] focus:border-[#28634F] cursor-pointer pr-7 appearance-none touch-manipulation min-h-[36px] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white border border-[#E5E3DC] rounded-xl px-3 py-2 text-xs font-semibold text-[#192521] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#28634F] focus:border-[#28634F] cursor-pointer pr-8 appearance-none touch-manipulation min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Sort practitioners on current page"
               >
                 <option value="Relevance">Relevance</option>
@@ -318,39 +338,53 @@ export default function CreatorListingPage() {
               <strong className="text-[#192521] font-semibold">{totalPages}</strong> ({total} total practitioners)
             </p>
 
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                className="px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-[#192521] bg-white border border-[#E5E3DC] rounded-xl hover:bg-[#EFECE3] disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-[#28634F]"
+                className="min-h-[44px] px-3.5 py-2 text-xs font-semibold text-[#192521] bg-white border border-[#E5E3DC] rounded-xl hover:bg-[#EFECE3] disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-colors touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#28634F] cursor-pointer"
                 aria-label="Previous page"
               >
                 &larr; Prev
               </button>
 
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                <button
-                  key={pageNum}
-                  type="button"
-                  onClick={() => setCurrentPage(pageNum)}
-                  style={pageNum === currentPage ? { backgroundColor: '#28634F', color: '#FFFFFF' } : {}}
-                  className={`w-8 h-8 sm:w-9 sm:h-9 text-xs font-semibold rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-[#28634F] ${
-                    pageNum === currentPage
-                      ? 'bg-[#28634F] text-white shadow-sm'
-                      : 'bg-white text-[#192521] border border-[#E5E3DC] hover:bg-[#EFECE3]'
-                  }`}
-                  aria-current={pageNum === currentPage ? 'page' : undefined}
-                >
-                  {pageNum}
-                </button>
-              ))}
+              {paginationItems.map((item) => {
+                if (typeof item === 'string') {
+                  return (
+                    <span
+                      key={item}
+                      className="min-w-[32px] min-h-[44px] inline-flex items-center justify-center text-xs font-semibold text-[#5A6561]"
+                      aria-hidden="true"
+                    >
+                      &hellip;
+                    </span>
+                  );
+                }
+                const pageNum = item;
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum)}
+                    style={pageNum === currentPage ? { backgroundColor: '#28634F', color: '#FFFFFF' } : {}}
+                    className={`min-w-[44px] min-h-[44px] px-2 text-xs font-semibold rounded-xl transition-colors touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#28634F] cursor-pointer ${
+                      pageNum === currentPage
+                        ? 'bg-[#28634F] text-white shadow-sm'
+                        : 'bg-white text-[#192521] border border-[#E5E3DC] hover:bg-[#EFECE3]'
+                    }`}
+                    aria-current={pageNum === currentPage ? 'page' : undefined}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
 
               <button
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                className="px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-[#192521] bg-white border border-[#E5E3DC] rounded-xl hover:bg-[#EFECE3] disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-[#28634F]"
+                className="min-h-[44px] px-3.5 py-2 text-xs font-semibold text-[#192521] bg-white border border-[#E5E3DC] rounded-xl hover:bg-[#EFECE3] disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-colors touch-manipulation focus:outline-none focus:ring-2 focus:ring-[#28634F] cursor-pointer"
                 aria-label="Next page"
               >
                 Next &rarr;

@@ -1,7 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import AppRoutes from './routes';
 
 function App() {
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return undefined;
+
+    let isCancelled = false;
+    let listenerHandle;
+
+    CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack) {
+        window.history.back();
+      } else {
+        CapacitorApp.exitApp();
+      }
+    }).then((handle) => {
+      if (isCancelled) {
+        handle.remove();
+      } else {
+        listenerHandle = handle;
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+      if (listenerHandle) {
+        listenerHandle.remove();
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-canvas text-ink font-sans">
       <AppRoutes />

@@ -190,3 +190,64 @@ The **Creator Discovery** module (`/creators` and `/creators/:id`) is integrated
 - **Content Hub Backend Pending**: Anvesha Patel's Content Hub backend (`server/src/modules/content/content.service.js`) currently returns `501 NOT_IMPLEMENTED`, and `Content` lacks a foreign-key relationship to `CreatorProfile` or `User`. `GET /api/creators/:id/content` returns `{ content: [], count: 0 }`, and the Creator Content Showcase renders an empty state until real content records and creator linkage are added.
 - **Connections Navigation Page Pending**: While inline `Connect` and `Accept Request` actions on creator cards and profiles use live `/api/connections/*` endpoints, the top navigation `"Connections"` link in `Navbar.jsx` points to `#` pending Jatin's dedicated Connections dashboard page.
 
+---
+
+## 8. Mobile Platforms (Capacitor 8.6: Android & iOS)
+
+The same React + Vite frontend (`client/dist`) is packaged for both **Android** (`client/android/`) and **iOS** (`client/ios/`) via **Capacitor 8.6** (`com.rythcore.app` / `Ryth Core`).
+
+### Prerequisites (All Mobile Platforms)
+- **Node.js:** `>= 22.0.0` (required by `@capacitor/cli@8.6.0`)
+- **Installed Capacitor Packages:** `@capacitor/core@^8.6.0`, `@capacitor/cli@^8.6.0`, `@capacitor/android@^8.6.0`, `@capacitor/ios@^8.6.0`, `@capacitor/app@^8.1.2`, `@capacitor/browser@^8.0.5`
+
+### Capacitor Build & Sync Commands
+Whenever frontend code or environment variables change, rebuild and sync both native platforms:
+```bash
+cd client
+npm run build
+npx cap sync android
+npx cap sync ios
+```
+
+### Android Setup & Build
+1. **Prerequisites:** Install **Android Studio** (Otter 2025.2.1+ or newer) with **JDK 21+** (`JAVA_HOME` configured) and **Android SDK Platform 36** (`compileSdkVersion = 36`, `targetSdkVersion = 36`, `minSdkVersion = 24`, AGP `8.13.0`, Gradle `8.14.3`).
+2. **Sync web assets & plugins:**
+   ```bash
+   cd client
+   npm run build
+   npx cap sync android
+   ```
+3. **Build debug APK or open in Android Studio:**
+   ```bash
+   # CLI debug APK build:
+   cd client/android
+   ./gradlew assembleDebug
+   # Output: client/android/app/build/outputs/apk/debug/app-debug.apk
+
+   # Or open in Android Studio to run on an emulator/device:
+   cd client
+   npm run cap:open:android
+   ```
+
+### iOS Setup & Build (Xcode & iPhone Simulator)
+1. **Prerequisites:** **Xcode** (macOS; tested on Xcode 27.2 / iOS 27.0 Simulator, deployment target iOS `15.0`, `UIScene` lifecycle enabled) and **CocoaPods** (`pod`):
+   ```bash
+   brew install cocoapods
+   ```
+2. **Sync web assets & install iOS Pods (`Pods/` + `App.xcworkspace`):**
+   ```bash
+   cd client
+   npm run build
+   npx cap sync ios
+   ```
+3. **Open in Xcode:**
+   ```bash
+   npm run cap:open:ios
+   # Opens client/ios/App/App.xcworkspace (always use .xcworkspace, not .xcodeproj, after pod install)
+   ```
+4. **Run on iPhone Simulator:** Select an iPhone simulator target (e.g., `iPhone 18 Pro`) in the Xcode toolbar and press **Run (`Cmd + R`)**, or build from CLI:
+   ```bash
+   xcodebuild -workspace client/ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 18 Pro' build
+   ```
+5. **Backend URL Note:** `VITE_API_BASE_URL` currently defaults to `http://localhost:5001/api`. For physical devices or production builds, update `VITE_API_BASE_URL` in `client/.env` to a deployed HTTPS backend URL before running `npm run build` and `npx cap sync`.
+

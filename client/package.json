@@ -8,12 +8,16 @@
     "build": "vite build",
     "preview": "vite preview",
     "cap:sync": "cap sync",
-    "cap:open:android": "cap open android"
+    "cap:open:android": "cap open android",
+    "cap:open:ios": "cap open ios"
   },
   "dependencies": {
-    "@capacitor/android": "^6.0.0",
-    "@capacitor/cli": "^6.0.0",
-    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/browser": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
     "axios": "^1.7.0",
     "lucide-react": "^1.71.0",
     "react": "^18.3.1",

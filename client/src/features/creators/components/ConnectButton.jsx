@@ -75,7 +75,7 @@ export default function ConnectButton({
     }
     return (
       <span
-        className="inline-flex items-center justify-center px-3 h-9 rounded-lg text-xs font-medium bg-[#F8F7F2] text-[#5A6561] border border-[#E5E3DC]"
+        className="inline-flex items-center justify-center px-3 min-h-[44px] rounded-xl text-xs font-medium bg-[#F8F7F2] text-[#5A6561] border border-[#E5E3DC]"
       >
         You
       </span>
@@ -93,8 +93,8 @@ export default function ConnectButton({
           aria-label={`Connected with ${creatorName}`}
           className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold border transition-all cursor-default select-none ${
             isProfile
-              ? 'h-11 px-6 text-sm bg-[#EBF3EE] text-[#28634F] border-[#28634F]/30'
-              : 'h-9 px-3.5 text-xs bg-[#EBF3EE] text-[#28634F] border-[#28634F]/30'
+              ? 'min-h-[44px] px-6 text-sm bg-[#EBF3EE] text-[#28634F] border-[#28634F]/30'
+              : 'min-h-[44px] px-3.5 text-xs bg-[#EBF3EE] text-[#28634F] border-[#28634F]/30'
           }`}
         >
           <svg className="w-4 h-4 text-[#28634F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -117,8 +117,8 @@ export default function ConnectButton({
           aria-label={`Connection request sent to ${creatorName}`}
           className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold border transition-all cursor-default select-none ${
             isProfile
-              ? 'h-11 px-6 text-sm bg-[#F8F7F2] text-[#5A6561] border-[#E5E3DC]'
-              : 'h-9 px-3.5 text-xs bg-[#F8F7F2] text-[#5A6561] border-[#E5E3DC]'
+              ? 'min-h-[44px] px-6 text-sm bg-[#F8F7F2] text-[#5A6561] border-[#E5E3DC]'
+              : 'min-h-[44px] px-3.5 text-xs bg-[#F8F7F2] text-[#5A6561] border-[#E5E3DC]'
           }`}
         >
           <svg className="w-3.5 h-3.5 text-[#5A6561]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -142,8 +142,8 @@ export default function ConnectButton({
         style={{ backgroundColor: '#28634F', color: '#FFFFFF' }}
         className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#28634F] cursor-pointer touch-manipulation active:scale-[0.98] ${
           isProfile
-            ? 'h-11 px-6 text-sm bg-[#28634F] hover:bg-[#1E4D3D] text-white'
-            : 'h-9 px-3.5 text-xs bg-[#28634F] hover:bg-[#1E4D3D] text-white'
+            ? 'min-h-[44px] px-6 text-sm bg-[#28634F] hover:bg-[#1E4D3D] text-white'
+            : 'min-h-[44px] px-3.5 text-xs bg-[#28634F] hover:bg-[#1E4D3D] text-white'
         } ${isSending ? 'opacity-70 cursor-wait' : ''}`}
       >
         {isSending ? (
@@ -177,8 +177,8 @@ export default function ConnectButton({
         aria-label={`Sign in to connect with ${creatorName}`}
         className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold border transition-all cursor-pointer touch-manipulation hover:border-[#28634F] text-[#28634F] bg-white ${
           isProfile
-            ? 'h-11 px-6 text-sm border-[#DCE8E0] hover:bg-[#EBF3EE]'
-            : 'h-9 px-3.5 text-xs border-[#DCE8E0] hover:bg-[#EBF3EE]'
+            ? 'min-h-[44px] px-6 text-sm border-[#DCE8E0] hover:bg-[#EBF3EE]'
+            : 'min-h-[44px] px-3.5 text-xs border-[#DCE8E0] hover:bg-[#EBF3EE]'
         }`}
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -192,7 +192,7 @@ export default function ConnectButton({
   // 6. Default: Idle state ("Connect")
   const isProfile = variant === 'profile';
   return (
-    <div className="relative inline-flex flex-col items-center">
+    <div className="relative inline-flex flex-col items-start sm:items-center">
       <button
         type="button"
         onClick={handleClick}
@@ -201,8 +201,8 @@ export default function ConnectButton({
         style={{ backgroundColor: '#28634F', color: '#FFFFFF' }}
         className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#28634F] cursor-pointer touch-manipulation active:scale-[0.98] ${
           isProfile
-            ? 'w-full sm:w-auto h-11 px-6 text-sm bg-[#28634F] hover:bg-[#1E4D3D] text-white'
-            : 'h-9 px-3.5 text-xs bg-[#28634F] hover:bg-[#1E4D3D] text-white'
+            ? 'w-full sm:w-auto min-h-[44px] px-6 text-sm bg-[#28634F] hover:bg-[#1E4D3D] text-white'
+            : 'min-h-[44px] px-3.5 text-xs bg-[#28634F] hover:bg-[#1E4D3D] text-white'
         } ${isSending ? 'opacity-70 cursor-wait' : ''}`}
       >
         {isSending ? (
@@ -223,16 +223,22 @@ export default function ConnectButton({
         )}
       </button>
 
-      {/* Accessible inline toast message if an action completed */}
+      {/* Accessible inline toast message positioned cleanly above button so card borders never clip */}
       {feedbackMessage && (
-        <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold text-[#28634F] bg-[#EBF3EE] px-2 py-0.5 rounded shadow-sm border border-[#C5DACE] z-10 animate-fade-in">
+        <span
+          role="status"
+          className="absolute bottom-full mb-2 left-0 whitespace-nowrap text-[11px] font-semibold text-[#28634F] bg-[#EBF3EE] px-2.5 py-1 rounded-lg shadow-sm border border-[#C5DACE] z-10 pointer-events-none"
+        >
           {feedbackMessage}
         </span>
       )}
 
-      {/* Inline error feedback if an unexpected network error occurs */}
+      {/* Inline error feedback positioned cleanly above button */}
       {error && !feedbackMessage && (
-        <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold text-[#B84E3C] bg-[#FCEEEA] px-2 py-0.5 rounded shadow-sm border border-[#EACEC7] z-10">
+        <span
+          role="alert"
+          className="absolute bottom-full mb-2 left-0 max-w-[220px] text-[11px] font-semibold text-[#B84E3C] bg-[#FCEEEA] px-2.5 py-1 rounded-lg shadow-sm border border-[#EACEC7] z-10 pointer-events-none"
+        >
           {error}
         </span>
       )}

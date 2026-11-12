@@ -1,5 +1,6 @@
 import React from 'react';
 import ConnectButton from './ConnectButton.jsx';
+import { openExternalUrl } from '../utils/externalLink.js';
 
 // Domain-specific styling for the category pill & vertical accent indicator
 const DOMAIN_THEMES = {
@@ -129,15 +130,16 @@ export default function ProfileHeader({ creator, connectionsData = null, onConne
             onActionSuccess={onConnectionActionSuccess}
           />
 
-          {/* Social Links */}
+          {/* Social Links (44x44px touch targets; uses @capacitor/browser on native Android) */}
           {socialLinks && (
-            <div className="flex items-center justify-center gap-2 pt-1">
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
               {socialLinks.github && (
                 <a
                   href={socialLinks.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 text-[#5A6561] hover:text-[#192521] rounded-lg hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors"
+                  onClick={(e) => openExternalUrl(socialLinks.github, e)}
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-[#5A6561] hover:text-[#192521] rounded-xl hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors touch-manipulation"
                   title="GitHub Profile"
                   aria-label="GitHub Profile"
                 >
@@ -151,7 +153,8 @@ export default function ProfileHeader({ creator, connectionsData = null, onConne
                   href={socialLinks.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 text-[#5A6561] hover:text-[#192521] rounded-lg hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors"
+                  onClick={(e) => openExternalUrl(socialLinks.linkedin, e)}
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-[#5A6561] hover:text-[#192521] rounded-xl hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors touch-manipulation"
                   title="LinkedIn Profile"
                   aria-label="LinkedIn Profile"
                 >
@@ -165,7 +168,8 @@ export default function ProfileHeader({ creator, connectionsData = null, onConne
                   href={socialLinks.twitter}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 text-[#5A6561] hover:text-[#192521] rounded-lg hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors"
+                  onClick={(e) => openExternalUrl(socialLinks.twitter, e)}
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-[#5A6561] hover:text-[#192521] rounded-xl hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors touch-manipulation"
                   title="X / Twitter Profile"
                   aria-label="X / Twitter Profile"
                 >
@@ -179,7 +183,8 @@ export default function ProfileHeader({ creator, connectionsData = null, onConne
                   href={socialLinks.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 text-[#5A6561] hover:text-[#192521] rounded-lg hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors"
+                  onClick={(e) => openExternalUrl(socialLinks.website, e)}
+                  className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-[#5A6561] hover:text-[#192521] rounded-xl hover:bg-[#EFECE3] border border-[#E5E3DC] transition-colors touch-manipulation"
                   title="Personal Website"
                   aria-label="Personal Website"
                 >
