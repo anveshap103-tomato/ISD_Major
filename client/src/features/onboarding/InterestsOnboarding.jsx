@@ -1,6 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5001/api').replace(/\/+$/, '');
 import {
   Laptop,
   Palette,
@@ -63,8 +65,8 @@ export default function InterestsOnboarding() {
         const token = localStorage.getItem('token');
 
         const [interestsResponse, profileResponse] = await Promise.all([
-          fetch('http://localhost:5001/api/users/interests'),
-          fetch('http://localhost:5001/api/users/me', {
+          fetch(`${API_BASE_URL}/users/interests`),
+          fetch(`${API_BASE_URL}/users/me`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -109,7 +111,7 @@ export default function InterestsOnboarding() {
       const token = localStorage.getItem('token');
 
       const response = await fetch(
-        'http://localhost:5001/api/users/me/interests',
+        `${API_BASE_URL}/users/me/interests`,
         {
           method: 'PUT',
           headers: {

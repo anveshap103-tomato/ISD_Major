@@ -10,6 +10,8 @@ const interests = [
   'Entrepreneurship',
 ];
 
+const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5001/api').replace(/\/+$/, '');
+
 export default function Register() {
     const navigate = useNavigate();
 
@@ -35,7 +37,7 @@ const handleRegister = async (e) => {
 
   try {
     const response = await fetch(
-      'http://localhost:5001/api/auth/register',
+      `${API_BASE_URL}/auth/register`,
       {
         method: 'POST',
         headers: {

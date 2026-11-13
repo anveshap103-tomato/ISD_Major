@@ -63,6 +63,8 @@ const HomePlaceholder = () => {
   );
 };
 
+const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5001/api').replace(/\/+$/, '');
+
 const ProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(null);
 
@@ -77,7 +79,7 @@ const ProtectedRoute = ({ children }) => {
 
       try {
         const response = await fetch(
-          'http://localhost:5001/api/auth/me',
+          `${API_BASE_URL}/auth/me`,
           {
             method: 'GET',
             headers: {
