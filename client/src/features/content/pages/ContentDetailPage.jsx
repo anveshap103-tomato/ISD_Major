@@ -61,10 +61,10 @@ export default function ContentDetailPage() {
   return (
     <div className="min-h-screen bg-[#F7F5EF] text-[#192521]">
       <Navbar />
-      <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
         <Link
           to="/content"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[#28634F] hover:underline"
+          className="inline-flex min-h-11 items-center gap-2 rounded-sm text-sm font-semibold text-[#28634F] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#28634F]"
         >
           <span aria-hidden="true">←</span> Back to Knowledge Hub
         </Link>
@@ -87,7 +87,7 @@ export default function ContentDetailPage() {
             )}
           </section>
         ) : item ? (
-          <article className="mt-8 rounded-2xl border border-[#E5E3DC] bg-white p-6 shadow-sm sm:p-10">
+          <article className="mt-6 overflow-hidden rounded-2xl border border-[#E5E3DC] bg-white p-4 shadow-sm sm:mt-8 sm:p-8 lg:p-10">
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
               <span className="rounded-full bg-[#EBF3EE] px-3 py-1 uppercase tracking-wide text-[#28634F]">
                 {typeLabel}
@@ -99,7 +99,7 @@ export default function ContentDetailPage() {
               )}
             </div>
 
-            <h1 className="mt-5 font-serif text-3xl font-semibold leading-tight sm:text-4xl">
+            <h1 className="mt-5 break-words font-serif text-3xl font-semibold leading-tight sm:text-4xl">
               {item.title}
             </h1>
 
@@ -113,7 +113,7 @@ export default function ContentDetailPage() {
             )}
 
             {item.description && (
-              <p className="mt-8 whitespace-pre-line text-base leading-7 text-[#4F5C56]">
+              <p className="mt-6 whitespace-pre-line break-words text-base leading-7 text-[#4F5C56] sm:mt-8">
                 {item.description}
               </p>
             )}
@@ -123,7 +123,7 @@ export default function ContentDetailPage() {
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg bg-[#28634F] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1E4D3D]"
+                className="inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-lg bg-[#28634F] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1E4D3D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#28634F] focus-visible:ring-offset-2"
               >
                 {item.type === 'video' ? 'Watch video' : item.type === 'book' ? 'View book' : 'Read article'}
                 <span aria-hidden="true">↗</span>
