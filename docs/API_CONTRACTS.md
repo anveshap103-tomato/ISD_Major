@@ -148,7 +148,7 @@
 - **Response (200 OK)**: Returns the removed content ID in the standard success envelope.
 - **Response (404 Not Found)**: Returned if the current user has no bookmark for that content.
 
-> **Day 1 status:** Routes and contracts are in place. Content queries and bookmark persistence will be implemented on Day 2; these endpoints currently return the standard `NOT_IMPLEMENTED` error until then.
+> **Implementation status:** Content listing, details, categories, and persistent bookmarks are implemented. Database-backed verification requires the migrations and content seed data to be applied.
 
 ---
 
@@ -376,7 +376,7 @@
   | `id` | `string` | Yes | Unique creator identifier (PostgreSQL UUID format). |
 
 - **Integration Status**:
-  > **Teammate Integration Notice**: Returns `{ creatorId, creatorName, content: [], count: 0 }` for existing creators until Anvesha Patel's Content Hub persistence (`server/src/modules/content/content.service.js`, currently returning `501 NOT_IMPLEMENTED`) and a creator/user foreign-key relationship on `Content` are implemented. Non-existent or invalid creator IDs return `404 Not Found`.
+  > **Teammate Integration Notice**: Currently returns `{ creatorId, creatorName, content: [], count: 0 }` for existing creators. The Content model does not yet have a creator/user relationship, so creator-specific resources require an agreed association and schema change. Non-existent or invalid creator IDs return `404 Not Found`.
   > When live content items are returned, `ProfileContentShowcase.jsx` expects `id`, `title`, `type` (`ARTICLE` | `VIDEO` | `BOOK`), `description`, `url`, optional `thumbnail` / `thumbnailUrl`, optional `category`, and `publishedAt` / `createdAt`.
 
 - **HTTP Status Codes**:

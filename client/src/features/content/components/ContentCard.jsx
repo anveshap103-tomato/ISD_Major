@@ -7,7 +7,12 @@ const TYPE_LABELS = {
   book: 'Book',
 };
 
-export default function ContentCard({ item, isBookmarked, onToggleBookmark }) {
+export default function ContentCard({
+  item,
+  isBookmarked,
+  onToggleBookmark,
+  isBookmarking = false,
+}) {
   return (
     <article className="flex h-full flex-col rounded-2xl border border-[#E5E3DC] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
@@ -20,15 +25,16 @@ export default function ContentCard({ item, isBookmarked, onToggleBookmark }) {
         <button
           type="button"
           onClick={() => onToggleBookmark(item.id)}
+          disabled={isBookmarking}
           aria-pressed={isBookmarked}
-          aria-label={isBookmarked ? `Remove ${item.title} bookmark` : `Bookmark ${item.title}`}
-          className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+          aria-label={isBookmarking ? `Updating ${item.title} bookmark` : isBookmarked ? `Remove ${item.title} bookmark` : `Bookmark ${item.title}`}
+          className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-wait disabled:opacity-60 ${
             isBookmarked
               ? 'border-[#28634F] bg-[#28634F] text-white'
               : 'border-[#D9DDD7] text-[#28634F] hover:bg-[#EBF3EE]'
           }`}
         >
-          {isBookmarked ? 'Saved' : 'Save'}
+          {isBookmarking ? 'Updating…' : isBookmarked ? 'Saved' : 'Save'}
         </button>
       </div>
 
