@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Navbar from '../../../components/layout/Navbar';
 
 import {
   getConnections,
@@ -130,9 +131,11 @@ const handleSendRequest = async (receiverId) => {
   );
 
   return (
-    <div className="min-h-screen bg-[#F7F5EF] px-5 py-10">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
+    <div className="min-h-screen bg-[#F7F5EF]">
+      <Navbar />
+      <div className="px-5 py-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
           <p className="text-xs uppercase tracking-widest text-[#28634F] mb-2">
             Your Network
           </p>
@@ -284,6 +287,7 @@ const handleSendRequest = async (receiverId) => {
 )}
           </div>
         )}
+      </div>
       </div>
     </div>
   );
