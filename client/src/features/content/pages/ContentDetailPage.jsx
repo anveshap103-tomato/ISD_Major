@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Navbar from '../../../components/layout/Navbar';
 import api from '../../../services/api';
+import { openExternalUrl } from '../../../utils/externalLink';
 import ContentVideoPlayer from '../components/ContentVideoPlayer';
 
 const TYPE_LABELS = {
@@ -123,6 +124,7 @@ export default function ContentDetailPage() {
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(event) => openExternalUrl(item.url, event)}
                 className="inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-lg bg-[#28634F] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1E4D3D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#28634F] focus-visible:ring-offset-2"
               >
                 {item.type === 'video' ? 'Watch video' : item.type === 'book' ? 'View book' : 'Read article'}
