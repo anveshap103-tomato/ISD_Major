@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Navbar from '../../../components/layout/Navbar';
 import api from '../../../services/api';
+import ContentVideoPlayer from '../components/ContentVideoPlayer';
 
 const TYPE_LABELS = {
   article: 'Article',
@@ -106,6 +107,10 @@ export default function ContentDetailPage() {
               {item.author && <span>By {item.author}</span>}
               {publishedDate && <time dateTime={item.createdAt}>{publishedDate}</time>}
             </div>
+
+            {item.type === 'video' && (
+              <ContentVideoPlayer url={item.url} title={item.title} />
+            )}
 
             {item.description && (
               <p className="mt-8 whitespace-pre-line text-base leading-7 text-[#4F5C56]">
