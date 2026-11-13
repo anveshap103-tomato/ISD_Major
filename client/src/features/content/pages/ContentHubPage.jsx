@@ -17,28 +17,42 @@ export default function ContentHubPage() {
   const [selectedType, setSelectedType] = useState('all');
 
   const [items, setItems] = useState([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [categories, setCategories] = useState(['All']);
   const [bookmarkedIds, setBookmarkedIds] = useState([]);
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [bookmarkError, setBookmarkError] = useState('');
+  const [categoriesError, setCategoriesError] = useState('');
+  const [bookmarksError, setBookmarksError] = useState('');
+  const [bookmarksLoading, setBookmarksLoading] = useState(true);
+  const [pendingBookmarkIds, setPendingBookmarkIds] = useState([]);
+
+  const [retryContent, setRetryContent] = useState(0);
+  const [retryCategories, setRetryCategories] = useState(0);
+  const [retryBookmarks, setRetryBookmarks] = useState(0);
 
   useEffect(() => {
     const loadCategories = async () => {
+      setCategoriesError('');
+
       try {
         const result = await fetchCategories();
-        setCategories(['All', ...(result.items || []).map((item) => item.name)]);
+        setCategories([
+          'All',
+          ...(result.items || []).map((item) => item.name),
+        ]);
       } catch (err) {
         console.error('Failed to load categories:', err);
+        setCategoriesError('Could not load categories. Please try again.');
       }
     };
 
     loadCategories();
-  }, []);
+  }, [retryCategories]);
 
   useEffect(() => {
     const loadContent = async () => {
@@ -48,9 +62,9 @@ export default function ContentHubPage() {
       try {
         const result = await fetchContent({
           search: search.trim() || undefined,
-          page,
           category: selectedCategory === 'All' ? undefined : selectedCategory,
           type: selectedType === 'all' ? undefined : selectedType,
+          page,
         });
 
         setItems(result.items || []);
@@ -65,41 +79,64 @@ export default function ContentHubPage() {
     };
 
     loadContent();
-  }, [search, selectedCategory, selectedType, page]);
+  }, [search, selectedCategory, selectedType, page, retryContent]);
 
   useEffect(() => {
     const loadBookmarks = async () => {
+      setBookmarksLoading(true);
+      setBookmarksError('');
+
       try {
         const result = await fetchBookmarks();
+
         setBookmarkedIds(
-          (Array.isArray(result) ? result : []).map((bookmark) => bookmark.contentId)
+          (Array.isArray(result) ? result : [])
+            .map((bookmark) => bookmark.contentId || bookmark.content?.id)
+            .filter(Boolean)
         );
       } catch (err) {
         console.error('Failed to load bookmarks:', err);
+        setBookmarksError('Could not load your saved resources. Please try again.');
+      } finally {
+        setBookmarksLoading(false);
       }
     };
 
     loadBookmarks();
-  }, []);
+  }, [retryBookmarks]);
 
   const toggleBookmark = async (contentId) => {
-    setBookmarkError('');
+    if (
+      pendingBookmarkIds.includes(contentId) ||
+      bookmarksLoading
+    ) {
+      return;
+    }
 
-    const alreadyBookmarked = bookmarkedIds.includes(contentId);
+    const isBookmarked = bookmarkedIds.includes(contentId);
+
+    setPendingBookmarkIds((current) => [...current, contentId]);
+    setBookmarksError('');
 
     try {
-      if (alreadyBookmarked) {
+      if (isBookmarked) {
         await removeBookmark(contentId);
         setBookmarkedIds((current) =>
           current.filter((id) => id !== contentId)
         );
       } else {
         await addBookmark(contentId);
-        setBookmarkedIds((current) => [...current, contentId]);
+        setBookmarkedIds((current) =>
+          [...new Set([...current, contentId])]
+        );
       }
     } catch (err) {
       console.error('Bookmark update failed:', err);
-      setBookmarkError('Could not update bookmark. Please try again.');
+      setBookmarksError('Could not update this saved resource. Please try again.');
+    } finally {
+      setPendingBookmarkIds((current) =>
+        current.filter((id) => id !== contentId)
+      );
     }
   };
 
@@ -126,38 +163,71 @@ export default function ContentHubPage() {
           categories={categories}
           selectedCategory={selectedCategory}
           onCategoryChange={(value) => {
-  setSelectedCategory(value);
-  setPage(1);
-}}
+            setSelectedCategory(value);
+            setPage(1);
+          }}
           selectedType={selectedType}
           onTypeChange={(value) => {
-  setSelectedType(value);
-  setPage(1);
-}}
+            setSelectedType(value);
+            setPage(1);
+          }}
           search={search}
           onSearchChange={(value) => {
-  setSearch(value);
-  setPage(1);
-}}
+            setSearch(value);
+            setPage(1);
+          }}
         />
 
+        {categoriesError && (
+          <div className="mt-3 flex items-center gap-3 text-sm text-[#9B3D32]" role="alert">
+            <span>{categoriesError}</span>
+            <button
+              type="button"
+              onClick={() => setRetryCategories((attempt) => attempt + 1)}
+              className="font-semibold underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {bookmarksError && (
+          <div className="mt-3 flex items-center gap-3 text-sm text-[#9B3D32]" role="alert">
+            <span>{bookmarksError}</span>
+            <button
+              type="button"
+              onClick={() => setRetryBookmarks((attempt) => attempt + 1)}
+              className="font-semibold underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         <div className="mb-4 mt-7 flex items-center justify-between">
-          <h2 className="font-serif text-xl font-semibold">Explore resources</h2>
+          <h2 className="font-serif text-xl font-semibold">
+            Explore resources
+          </h2>
           <p className="text-xs text-[#707A75]">
             {totalCount} resources
           </p>
         </div>
 
-        {bookmarkError && (
-          <p className="mb-4 text-sm text-red-600">{bookmarkError}</p>
-        )}
-
         {loading ? (
-          <p className="py-12 text-center text-sm text-[#707A75]">
+          <p className="py-12 text-center text-sm text-[#707A75]" role="status">
             Loading resources...
           </p>
         ) : error ? (
-          <p className="py-12 text-center text-sm text-red-600">{error}</p>
+          <div className="rounded-2xl border border-dashed border-[#C9D0C9] bg-white/70 px-6 py-12 text-center" role="alert">
+            <p className="font-serif text-lg font-semibold">{error}</p>
+            <button
+              type="button"
+              onClick={() => setRetryContent((attempt) => attempt + 1)}
+              className="mt-3 rounded-lg bg-[#28634F] px-4 py-2 text-sm font-semibold text-white"
+            >
+              Retry
+            </button>
+          </div>
         ) : items.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => (
@@ -166,6 +236,9 @@ export default function ContentHubPage() {
                 item={item}
                 isBookmarked={bookmarkedIds.includes(item.id)}
                 onToggleBookmark={toggleBookmark}
+                isBookmarking={
+                  bookmarksLoading || pendingBookmarkIds.includes(item.id)
+                }
               />
             ))}
           </div>
@@ -179,7 +252,8 @@ export default function ContentHubPage() {
             </p>
           </div>
         )}
-              {!loading && !error && totalPages > 1 && (
+
+        {!loading && !error && totalPages > 1 && (
           <div className="mt-8 flex items-center justify-center gap-4">
             <button
               onClick={() => setPage((current) => current - 1)}
