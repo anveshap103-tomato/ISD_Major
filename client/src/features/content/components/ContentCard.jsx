@@ -39,7 +39,7 @@ export default function ContentCard({ item, isBookmarked, onToggleBookmark }) {
       <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#F0EEE8] pt-4">
         <div className="min-w-0">
           <p className="truncate text-xs font-semibold text-[#34413B]">{item.author}</p>
-          <p className="mt-1 text-xs text-[#7C8580]">{item.readingTime}</p>
+          <p className="mt-1 text-xs text-[#7C8580]">Learning resource</p>
         </div>
         <a
           href={item.url}
