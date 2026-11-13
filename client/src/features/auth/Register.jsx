@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { getApiBaseUrl } from '../../services/api';
 
 const interests = [
   'Technology',
@@ -9,8 +10,6 @@ const interests = [
   'AI & ML',
   'Entrepreneurship',
 ];
-
-const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5001/api').replace(/\/+$/, '');
 
 export default function Register() {
     const navigate = useNavigate();
@@ -37,7 +36,7 @@ const handleRegister = async (e) => {
 
   try {
     const response = await fetch(
-      `${API_BASE_URL}/auth/register`,
+      `${getApiBaseUrl()}/auth/register`,
       {
         method: 'POST',
         headers: {

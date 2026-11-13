@@ -78,5 +78,5 @@ client/src/features/creators/
 ## 4. Known Limitations & Dependencies
 
 1. **Content Hub Backend Pending**: Anvesha Patel's Content Hub backend (`server/src/modules/content/content.service.js`) currently returns `501 NOT_IMPLEMENTED`, and `Content` in `schema.prisma` lacks a foreign-key relationship to `CreatorProfile` or `User` (only a plain `author` string exists). `GET /api/creators/:id/content` returns `{ content: [], count: 0 }`, so `ProfileContentShowcase` displays its empty state until live content records and creator linkage are available.
-2. **Connections Page Navigation Pending**: `Connect` and `Accept Request` work live on creator cards and profile pages, while the top navigation `"Connections"` link in `Navbar.jsx` points to `#` pending Jatin's dedicated Connections page.
+2. **Connections Page Navigation Wired**: Top navigation `"Connections"` link in `Navbar.jsx` points directly to `/connections` and is wired to the live dedicated Connections module.
 3. **Page-Local Sorting**: Sorting by Name or Experience applies only to the currently fetched page slice (6 creators per page) rather than global database ordering.

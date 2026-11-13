@@ -17,6 +17,7 @@ import ConnectionsPage from '../features/connections/pages/ConnectionsPage';
 import InterestsOnboarding from '../features/onboarding/InterestsOnboarding';
 import ContentHubPage from '../features/content/pages/ContentHubPage';
 import ContentDetailPage from '../features/content/pages/ContentDetailPage';
+import { getApiBaseUrl } from '../services/api';
 
 const HomePlaceholder = () => {
   const navigate = useNavigate();
@@ -63,8 +64,6 @@ const HomePlaceholder = () => {
   );
 };
 
-const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5001/api').replace(/\/+$/, '');
-
 const ProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = React.useState(null);
 
@@ -79,7 +78,7 @@ const ProtectedRoute = ({ children }) => {
 
       try {
         const response = await fetch(
-          `${API_BASE_URL}/auth/me`,
+          `${getApiBaseUrl()}/auth/me`,
           {
             method: 'GET',
             headers: {

@@ -1,8 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-
-const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5001/api').replace(/\/+$/, '');
+import { getApiBaseUrl } from '../../services/api';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,7 +18,7 @@ export default function Login() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/auth/login`,
+        `${getApiBaseUrl()}/auth/login`,
         {
           method: 'POST',
           headers: {
