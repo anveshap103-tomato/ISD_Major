@@ -163,24 +163,29 @@ RythCore/
 
 ---
 
-## 6. Creator Discovery Module (Day 3 Status)
+## 6. Module 2 — Creator Discovery & Profiles
 
-The **Creator Discovery** module (`/creators` and `/creators/:id`) is integrated with PostgreSQL via Prisma ORM 7 and connected to Jatin's live Connections APIs.
+**Owner:** Tushar Singh \
+**Complete Specification:** [Detailed Module 2 Documentation](docs/MODULE_2_CREATOR_DISCOVERY.md)
 
-### Features Implemented:
-- **Directory Listing (`/creators`)**: Displays live PostgreSQL practitioners with role, organization, location, category badge, bio, top skills, and live Connect actions (`mockCreators.js` is not used in production pages).
-- **Multi-Attribute Search & Debouncing**: Case-insensitive 350ms debounced search across creator names, professional titles, organizations, biographies/introductions, and skills (`CreatorSkill.skillName`).
-- **Domain Category Filtering & Pagination**: Filters across the 6 stored categories (`AI & Machine Learning`, `Cloud & DevOps`, `Frontend & Design`, `Backend & Systems`, `Cybersecurity`, `Product & Tech Leadership`), resets pagination synchronously to page 1, and preserves page-local sorting (`(Current page only)` indicator).
-- **Detailed Profiles (`/creators/:id`)**: Loads profiles by `CreatorProfile.id` PostgreSQL UUID, with safe handling of optional/null fields, error-first Retry recovery, and 404 Not Found states.
-- **Live Connections Integration**: Creator cards and profile headers/sidebars integrate `connectionsApi.js`, `useConnectionStatus.js`, and `ConnectButton.jsx` against `/api/connections/*` (`Connect`, `Pending`, `Connected`, `Accept Request`, `Your Profile`/`You`, and `Sign in to Connect`). Profile navigation uses `CreatorProfile.id`; connection requests pass `creator.userId` (`User.id`) as `receiverId`.
-- **Creator Content Showcase**: `ProfileContentShowcase.jsx` loads `GET /api/creators/:id/content` independently from profile loading, supports `ARTICLE`, `VIDEO`, and `BOOK` type badges/filters, thumbnails, descriptions, dates, and localized loading/error/retry/empty states.
+The **Creator Discovery & Profiles** module (`/creators` and `/creators/:id`) provides a curated, high-performance directory of industry practitioners, deep professional profiles, multi-attribute search, domain category filters, and live real-world networking integration.
+
+### Core Capabilities:
+- **Directory Listing (`/creators`)**: Displays live PostgreSQL practitioners with roles, organizations, locations, domain badges, biographies, top technical skills, and live Connect actions.
+- **Multi-Attribute Search & Debouncing**: Case-insensitive 350ms debounced search matching across creator names, professional titles, organizations, biographies/introductions, and granular technical skills (`CreatorSkill.skillName`).
+- **Domain Category Filtering & Pagination**: Filter across 6 verified engineering domains (`AI & Machine Learning`, `Cloud & DevOps`, `Frontend & Design`, `Backend & Systems`, `Cybersecurity`, `Product & Tech Leadership`, and `All`). Includes pagination with out-of-range boundary clamping and page-local sorting (`Relevance`, `Experience`, `Name`).
+- **Detailed Profiles (`/creators/:id`)**: Comprehensive practitioner profiles supporting dual UUID lookup (`CreatorProfile.id` or `User.id`), editorial biographies, chronological career timelines, verified certifications/achievements, and defensive data mapping (`safeCreator`).
+- **Decoupled Content Showcase**: `ProfileContentShowcase.jsx` independently loads `GET /api/creators/:id/content` with type filtering (`Articles`, `Videos`, `Books`) and editorial empty states linked to `/content`.
+- **Live Connections Integration**: Reusable `ConnectButton.jsx` and `useConnectionStatus.js` hooked into Jatin's `/api/connections/*` endpoints with 6 state machine representations (`Connect`, `Pending`, `Connected`, `Accept Request`, `Your Profile`/`You`, and `Sign in to Connect`).
+- **Mobile & Accessibility Parity**: Responsive 3-col/2-col/1-col layouts, `>= 44×44px` touch targets, `env(safe-area-inset-bottom)` spacing, `overflow-x-clip`, and native browser delegation via `@capacitor/browser`.
+- **Regression Verification:** **88/88 automated regression tests passed** across data contracts, pagination, search, filters, profile routing, content, and Express HTTP endpoints.
 
 ### Available Backend API Endpoints:
-- `GET /api/creators`: Paginated listing with `search` (including skills), `category`, `skill`, `page`, and `limit` query parameters.
+- `GET /api/creators`: Paginated listing with `search`, `category`, `skill`, `page`, and `limit` query parameters.
 - `GET /api/creators/search`: Dedicated search endpoint across practitioner credentials and skills.
-- `GET /api/creators/:id`: Detailed creator profile lookup by UUID (exposes both `id` and `userId`).
-- `GET /api/creators/:id/content`: Creator educational resources endpoint.
-- `POST /api/connections/request`, `GET /api/connections`, `PATCH /api/connections/:id`: Jatin's Connections endpoints consumed by Creator Discovery.
+- `GET /api/creators/:id`: Detailed creator profile lookup by UUID (supports `CreatorProfile.id` or `User.id`).
+- `GET /api/creators/:id/content`: Creator published educational resources endpoint.
+- Consumes: `POST /api/connections/request`, `GET /api/connections`, `PATCH /api/connections/:id` (Jatin's Connections module).
 
 ---
 
