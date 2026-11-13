@@ -119,14 +119,57 @@ export const fetchCategories = async () => {
   return { items };
 };
 
-export const createBookmark = async () => {
-  throw notImplemented('Bookmark creation');
+
+export const createBookmark = async (userId, contentId) => {
+  const content = await prisma.content.findUnique({
+    where: { id: contentId },
+  });
+
+  if (!content) {
+    const error = new Error('Content not found');
+    error.statusCode = 404;
+    error.code = 'NOT_FOUND';
+    throw error;
+  }
+
+  return prisma.bookmark.upsert({
+    where: {
+      userId_contentId: { userId, contentId },
+    },
+    update: {},
+    create: { userId, contentId },
+    include: {
+      content: {
+        include: { category: true },
+      },
+    },
+  });
 };
 
-export const fetchBookmarksByUser = async () => {
-  throw notImplemented('Bookmark listing');
+export const fetchBookmarksByUser = async (userId) => {
+  return prisma.bookmark.findMany({
+    where: { userId },
+    include: {
+      content: {
+        include: { category: true },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
 };
 
-export const deleteBookmark = async () => {
-  throw notImplemented('Bookmark deletion');
+export const deleteBookmark = async (userId, contentId) => {
+  const result = await prisma.bookmark.deleteMany({
+    where: { userId, contentId },
+  });
+
+  if (result.count === 0) {
+    const error = new Error('Bookmark not found');
+    error.statusCode = 404;
+    error.code = 'NOT_FOUND';
+    throw error;
+  }
+
+  return { deleted: true };
 };
+
