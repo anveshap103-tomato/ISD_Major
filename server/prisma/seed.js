@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import bcrypt from 'bcryptjs';
 import prisma from '../src/config/db.js';
 import { seedContent } from './seed-content.js';
 
@@ -474,8 +475,8 @@ const CREATORS_SEED_DATA = [
 async function seed() {
   console.log('🌱 Starting Creator Discovery database seed...');
 
-  // Standard hashed password for test accounts
-  const defaultPasswordHash = crypto.createHash('sha256').update('RythCoreDemo2026!').digest('hex');
+  // Standard hashed password for test accounts (hashed with bcrypt so /api/auth/login succeeds)
+  const defaultPasswordHash = bcrypt.hashSync('RythCoreDemo2026!', 10);
 
   let seededUsersCount = 0;
   let seededProfilesCount = 0;
@@ -488,13 +489,14 @@ async function seed() {
       where: { email: creator.email },
       update: {
         name: creator.name,
-        avatarUrl: creator.avatar
+        avatarUrl: creator.avatar,
+        passwordHash: defaultPasswordHash,
       },
       create: {
         email: creator.email,
         name: creator.name,
         avatarUrl: creator.avatar,
-        passwordHash: defaultPasswordHash
+        passwordHash: defaultPasswordHash,
       }
     });
     seededUsersCount++;
