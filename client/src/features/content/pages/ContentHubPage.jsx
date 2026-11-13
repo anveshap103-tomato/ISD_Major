@@ -1,29 +1,72 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '../../../components/layout/Navbar';
+import api from '../../../services/api';
 import ContentCard from '../components/ContentCard';
 import ContentFilters from '../components/ContentFilters';
-import { CONTENT_CATEGORIES, MOCK_CONTENT } from '../data/mockContent';
 
 export default function ContentHubPage() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedType, setSelectedType] = useState('all');
   const [bookmarkedIds, setBookmarkedIds] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [items, setItems] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [categoriesError, setCategoriesError] = useState('');
+  const [retryContent, setRetryContent] = useState(0);
+  const [retryCategories, setRetryCategories] = useState(0);
 
-  const visibleItems = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  useEffect(() => {
+    const controller = new AbortController();
 
-    return MOCK_CONTENT.filter((item) => {
-      const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
-      const matchesType = selectedType === 'all' || item.type === selectedType;
-      const matchesSearch =
-        !query ||
-        [item.title, item.description, item.author, item.category, item.type]
-          .some((value) => value.toLowerCase().includes(query));
+    const loadCategories = async () => {
+      setCategoriesError('');
+      try {
+        const response = await api.get('/content/categories', { signal: controller.signal });
+        const categoryItems = response.data?.data?.items;
+        setCategories(Array.isArray(categoryItems) ? categoryItems : []);
+      } catch (requestError) {
+        if (requestError.code === 'ERR_CANCELED') return;
+        setCategoriesError('Could not load categories. Please try again.');
+      }
+    };
 
-      return matchesCategory && matchesType && matchesSearch;
-    });
-  }, [search, selectedCategory, selectedType]);
+    loadCategories();
+    return () => controller.abort();
+  }, [retryCategories]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadContent = async () => {
+      setLoading(true);
+      setError('');
+
+      const params = { page: 1, limit: 50 };
+      if (search.trim()) params.search = search.trim();
+      if (selectedCategory !== 'All') params.category = selectedCategory;
+      if (selectedType !== 'all') params.type = selectedType;
+
+      try {
+        const response = await api.get('/content', { params, signal: controller.signal });
+        const result = response.data?.data;
+        setItems(Array.isArray(result?.items) ? result.items : []);
+        setTotal(Number.isFinite(result?.total) ? result.total : 0);
+      } catch (requestError) {
+        if (requestError.code === 'ERR_CANCELED') return;
+        setItems([]);
+        setTotal(0);
+        setError('Could not load resources. Check your connection and try again.');
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    };
+
+    loadContent();
+    return () => controller.abort();
+  }, [search, selectedCategory, selectedType, retryContent]);
 
   const toggleBookmark = (contentId) => {
     setBookmarkedIds((current) =>
@@ -50,7 +93,7 @@ export default function ContentHubPage() {
         </section>
 
         <ContentFilters
-          categories={CONTENT_CATEGORIES}
+          categories={['All', ...categories.map((category) => category.name)]}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
           selectedType={selectedType}
@@ -59,14 +102,42 @@ export default function ContentHubPage() {
           onSearchChange={setSearch}
         />
 
+        {categoriesError && (
+          <div className="mt-3 flex items-center gap-3 text-sm text-[#9B3D32]" role="alert">
+            <span>{categoriesError}</span>
+            <button
+              type="button"
+              onClick={() => setRetryCategories((attempt) => attempt + 1)}
+              className="font-semibold underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         <div className="mb-4 mt-7 flex items-center justify-between">
           <h2 className="font-serif text-xl font-semibold">Explore resources</h2>
-          <p className="text-xs text-[#707A75]">{visibleItems.length} resources</p>
+          <p className="text-xs text-[#707A75]">{total} resources</p>
         </div>
 
-        {visibleItems.length > 0 ? (
+        {loading ? (
+          <p className="py-12 text-center text-sm text-[#707A75]" role="status">
+            Loading resources…
+          </p>
+        ) : error ? (
+          <div className="rounded-2xl border border-dashed border-[#C9D0C9] bg-white/70 px-6 py-12 text-center" role="alert">
+            <p className="font-serif text-lg font-semibold">{error}</p>
+            <button
+              type="button"
+              onClick={() => setRetryContent((attempt) => attempt + 1)}
+              className="mt-3 rounded-lg bg-[#28634F] px-4 py-2 text-sm font-semibold text-white"
+            >
+              Retry
+            </button>
+          </div>
+        ) : items.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {visibleItems.map((item) => (
+            {items.map((item) => (
               <ContentCard
                 key={item.id}
                 item={item}
