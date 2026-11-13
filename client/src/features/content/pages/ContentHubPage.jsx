@@ -3,12 +3,21 @@ import Navbar from '../../../components/layout/Navbar';
 import api from '../../../services/api';
 import ContentCard from '../components/ContentCard';
 import ContentFilters from '../components/ContentFilters';
+import {
+  addContentBookmark,
+  fetchContentBookmarks,
+  removeContentBookmark,
+} from '../services/contentApi';
 
 export default function ContentHubPage() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedType, setSelectedType] = useState('all');
   const [bookmarkedIds, setBookmarkedIds] = useState([]);
+  const [pendingBookmarkIds, setPendingBookmarkIds] = useState([]);
+  const [bookmarksLoading, setBookmarksLoading] = useState(true);
+  const [bookmarksError, setBookmarksError] = useState('');
+  const [retryBookmarks, setRetryBookmarks] = useState(0);
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
@@ -36,6 +45,31 @@ export default function ContentHubPage() {
     loadCategories();
     return () => controller.abort();
   }, [retryCategories]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadBookmarks = async () => {
+      setBookmarksLoading(true);
+      setBookmarksError('');
+      try {
+        const bookmarks = await fetchContentBookmarks({ signal: controller.signal });
+        setBookmarkedIds(
+          bookmarks
+            .map((bookmark) => bookmark.contentId || bookmark.content?.id)
+            .filter(Boolean)
+        );
+      } catch (requestError) {
+        if (requestError.code === 'ERR_CANCELED') return;
+        setBookmarksError('Could not load your saved resources. Please try again.');
+      } finally {
+        if (!controller.signal.aborted) setBookmarksLoading(false);
+      }
+    };
+
+    loadBookmarks();
+    return () => controller.abort();
+  }, [retryBookmarks]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -68,12 +102,32 @@ export default function ContentHubPage() {
     return () => controller.abort();
   }, [search, selectedCategory, selectedType, retryContent]);
 
-  const toggleBookmark = (contentId) => {
-    setBookmarkedIds((current) =>
-      current.includes(contentId)
-        ? current.filter((id) => id !== contentId)
-        : [...current, contentId]
-    );
+  const toggleBookmark = async (contentId) => {
+    if (pendingBookmarkIds.includes(contentId) || bookmarksLoading) return;
+
+    const isBookmarked = bookmarkedIds.includes(contentId);
+    setPendingBookmarkIds((current) => [...current, contentId]);
+    setBookmarksError('');
+
+    try {
+      if (isBookmarked) {
+        await removeContentBookmark(contentId);
+        setBookmarkedIds((current) => current.filter((id) => id !== contentId));
+      } else {
+        await addContentBookmark(contentId);
+        setBookmarkedIds((current) => [...new Set([...current, contentId])]);
+      }
+    } catch (requestError) {
+      if (requestError.response?.status === 409 && !isBookmarked) {
+        setBookmarkedIds((current) => [...new Set([...current, contentId])]);
+      } else if (requestError.response?.status === 404 && isBookmarked) {
+        setBookmarkedIds((current) => current.filter((id) => id !== contentId));
+      } else {
+        setBookmarksError('Could not update this saved resource. Please try again.');
+      }
+    } finally {
+      setPendingBookmarkIds((current) => current.filter((id) => id !== contentId));
+    }
   };
 
   return (
@@ -115,6 +169,19 @@ export default function ContentHubPage() {
           </div>
         )}
 
+        {bookmarksError && (
+          <div className="mt-3 flex items-center gap-3 text-sm text-[#9B3D32]" role="alert">
+            <span>{bookmarksError}</span>
+            <button
+              type="button"
+              onClick={() => setRetryBookmarks((attempt) => attempt + 1)}
+              className="font-semibold underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         <div className="mb-4 mt-7 flex items-center justify-between">
           <h2 className="font-serif text-xl font-semibold">Explore resources</h2>
           <p className="text-xs text-[#707A75]">{total} resources</p>
@@ -143,6 +210,7 @@ export default function ContentHubPage() {
                 item={item}
                 isBookmarked={bookmarkedIds.includes(item.id)}
                 onToggleBookmark={toggleBookmark}
+                isBookmarking={bookmarksLoading || pendingBookmarkIds.includes(item.id)}
               />
             ))}
           </div>

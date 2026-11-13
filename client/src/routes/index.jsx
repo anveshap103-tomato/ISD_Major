@@ -16,6 +16,7 @@ import CreatorProfilePage from '../features/creators/pages/CreatorProfilePage';
 import ConnectionsPage from '../features/connections/pages/ConnectionsPage';
 import InterestsOnboarding from '../features/onboarding/InterestsOnboarding';
 import ContentHubPage from '../features/content/pages/ContentHubPage';
+import ContentDetailPage from '../features/content/pages/ContentDetailPage';
 
 const HomePlaceholder = () => {
   const navigate = useNavigate();
@@ -159,6 +160,15 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute>
               <ConnectionsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/content/:id"
+          element={
+            <ProtectedRoute>
+              <ContentDetailPage />
             </ProtectedRoute>
           }
         />
