@@ -1,11 +1,16 @@
 import * as feedService from './feed.service.js';
 
-// Feed Controller Placeholders (Jatin)
 export const getPersonalizedFeed = async (req, res, next) => {
   try {
-    res.status(501).json({ message: 'Get personalized feed not yet implemented' });
+    const feed = await feedService.generateFeedForUser(
+      req.user.userId
+    );
+
+    res.status(200).json({
+      success: true,
+      data: feed,
+    });
   } catch (error) {
     next(error);
   }
 };
-
