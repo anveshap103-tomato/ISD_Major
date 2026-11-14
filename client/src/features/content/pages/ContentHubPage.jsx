@@ -55,6 +55,9 @@ export default function ContentHubPage() {
   }, [retryCategories]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let isCurrentRequest = true;
+
     const loadContent = async () => {
       setLoading(true);
       setError('');
@@ -65,20 +68,27 @@ export default function ContentHubPage() {
           category: selectedCategory === 'All' ? undefined : selectedCategory,
           type: selectedType === 'all' ? undefined : selectedType,
           page,
-        });
+        }, { signal: controller.signal });
 
+        if (!isCurrentRequest) return;
         setItems(result.items || []);
         setTotalPages(result.totalPages || 1);
         setTotalCount(result.total || 0);
       } catch (err) {
+        if (!isCurrentRequest || controller.signal.aborted) return;
         console.error('Failed to load content:', err);
         setError('Could not load resources. Please try again.');
       } finally {
-        setLoading(false);
+        if (isCurrentRequest) setLoading(false);
       }
     };
 
     loadContent();
+
+    return () => {
+      isCurrentRequest = false;
+      controller.abort();
+    };
   }, [search, selectedCategory, selectedType, page, retryContent]);
 
   useEffect(() => {
@@ -132,7 +142,16 @@ export default function ContentHubPage() {
       }
     } catch (err) {
       console.error('Bookmark update failed:', err);
-      setBookmarksError('Could not update this saved resource. Please try again.');
+      const status = err.response?.status;
+
+      // Keep the UI aligned when the server reports the desired state already exists.
+      if (!isBookmarked && status === 409) {
+        setBookmarkedIds((current) => [...new Set([...current, contentId])]);
+      } else if (isBookmarked && status === 404) {
+        setBookmarkedIds((current) => current.filter((id) => id !== contentId));
+      } else {
+        setBookmarksError('Could not update this saved resource. Please try again.');
+      }
     } finally {
       setPendingBookmarkIds((current) =>
         current.filter((id) => id !== contentId)
