@@ -142,7 +142,16 @@ export default function ContentHubPage() {
       }
     } catch (err) {
       console.error('Bookmark update failed:', err);
-      setBookmarksError('Could not update this saved resource. Please try again.');
+      const status = err.response?.status;
+
+      // Keep the UI aligned when the server reports the desired state already exists.
+      if (!isBookmarked && status === 409) {
+        setBookmarkedIds((current) => [...new Set([...current, contentId])]);
+      } else if (isBookmarked && status === 404) {
+        setBookmarkedIds((current) => current.filter((id) => id !== contentId));
+      } else {
+        setBookmarksError('Could not update this saved resource. Please try again.');
+      }
     } finally {
       setPendingBookmarkIds((current) =>
         current.filter((id) => id !== contentId)
