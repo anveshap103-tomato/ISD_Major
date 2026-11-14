@@ -18,6 +18,7 @@ import InterestsOnboarding from '../features/onboarding/InterestsOnboarding';
 import ContentHubPage from '../features/content/pages/ContentHubPage';
 import ContentDetailPage from '../features/content/pages/ContentDetailPage';
 import { getApiBaseUrl } from '../services/api';
+import FeedPage from '../features/feed/pages/FeedPage';
 
 const HomePlaceholder = () => {
   const navigate = useNavigate();
@@ -121,7 +122,7 @@ export default function AppRoutes() {
           path="/"
           element={
             <ProtectedRoute>
-              <HomePlaceholder />
+              <FeedPage />
             </ProtectedRoute>
           }
         />

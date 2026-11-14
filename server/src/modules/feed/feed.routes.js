@@ -4,8 +4,6 @@ import { authenticateToken } from '../../middlewares/auth.js';
 
 const router = Router();
 
-// Route placeholders (Jatin)
-// router.get('/', authenticateToken, feedController.getPersonalizedFeed);
+router.get('/', authenticateToken, feedController.getPersonalizedFeed);
 
 export default router;
-
