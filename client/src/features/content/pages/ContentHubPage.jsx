@@ -55,6 +55,9 @@ export default function ContentHubPage() {
   }, [retryCategories]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let isCurrentRequest = true;
+
     const loadContent = async () => {
       setLoading(true);
       setError('');
@@ -65,20 +68,27 @@ export default function ContentHubPage() {
           category: selectedCategory === 'All' ? undefined : selectedCategory,
           type: selectedType === 'all' ? undefined : selectedType,
           page,
-        });
+        }, { signal: controller.signal });
 
+        if (!isCurrentRequest) return;
         setItems(result.items || []);
         setTotalPages(result.totalPages || 1);
         setTotalCount(result.total || 0);
       } catch (err) {
+        if (!isCurrentRequest || controller.signal.aborted) return;
         console.error('Failed to load content:', err);
         setError('Could not load resources. Please try again.');
       } finally {
-        setLoading(false);
+        if (isCurrentRequest) setLoading(false);
       }
     };
 
     loadContent();
+
+    return () => {
+      isCurrentRequest = false;
+      controller.abort();
+    };
   }, [search, selectedCategory, selectedType, page, retryContent]);
 
   useEffect(() => {
